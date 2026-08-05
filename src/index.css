@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #08090f;
+    color: #f1f5f9;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Syne', sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-brand {
+    font-family: 'Orbitron', 'Outfit', sans-serif;
+  }
+  .font-heading {
+    font-family: 'Outfit', 'Syne', sans-serif;
+  }
+  .font-body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Stabilo Neon Lime / Green Glow utilities */
+  .text-neon-lime {
+    color: #ccff00;
+    text-shadow: 0 0 10px rgba(204, 255, 0, 0.7), 0 0 22px rgba(163, 230, 53, 0.4);
+  }
+
+  .border-stabilo {
+    border-color: rgba(204, 255, 0, 0.4);
+  }
+
+  .border-stabilo-bright {
+    border-color: #ccff00;
+  }
+
+  .bg-stabilo {
+    background-color: #ccff00;
+    color: #090a0f;
+  }
+
+  .glow-stabilo-box {
+    box-shadow: 0 0 20px rgba(204, 255, 0, 0.25), inset 0 0 10px rgba(204, 255, 0, 0.1);
+  }
+
+  .glow-stabilo-sm {
+    box-shadow: 0 0 12px rgba(204, 255, 0, 0.3);
+  }
+
+  /* Custom sleek scrollbars */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(12, 14, 24, 0.8);
+    border-radius: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(204, 255, 0, 0.35);
+    border-radius: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(204, 255, 0, 0.85);
+  }
+
+  /* Marquee Running Text */
+  .animate-marquee {
+    display: inline-block;
+    white-space: nowrap;
+    animation: marquee 22s linear infinite;
+  }
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+

@@ -1,0 +1,8 @@
+{
+  "name": "RINJANI PK",
+  "description": "System Realtime Dashboard & Penyimpanan Data PK, Kata-Kata, dan Operasional",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

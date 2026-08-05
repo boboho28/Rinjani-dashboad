@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#0b0f19"/>
+  <!-- Mountain Shadow/Background Peak -->
+  <polygon points="12,50 32,18 48,42 52,50" fill="#1e293b"/>
+  <!-- Main Rinjani Mountain Peak -->
+  <polygon points="8,50 26,20 38,38 56,50" fill="url(#mountainGrad)" stroke="#a3e635" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Snow Cap Peak -->
+  <polygon points="26,20 20,30 28,30" fill="#ffffff"/>
+  <polygon points="44,26 40,32 46,32" fill="#ffffff"/>
+  <!-- Accent Glow lines -->
+  <polyline points="8,50 26,20 56,50" fill="none" stroke="#ccff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="mountainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ccff00"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,10 @@
+{
+  "entities": {
+    "app_data": {
+      "title": "App Data Collection",
+      "description": "Stores Rinjani System data (mainMenus, categories, templates, reports)",
+      "type": "document",
+      "path": "app_data/global"
+    }
+  }
+}
