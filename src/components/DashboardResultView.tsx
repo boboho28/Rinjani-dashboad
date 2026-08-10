@@ -44,9 +44,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   setPasaranList,
   addToast,
 }) => {
-  const [selectedSession, setSelectedSession] = useState<string>('SORE');
+  // --- SESSION PERSISTENCE (PENGINGAT SESI SAAT REFRESH) ---
+  const [selectedSession, setSelectedSession] = useState<string>(() => {
+    return localStorage.getItem('rinjani_last_result_session') || 'SORE';
+  });
+
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  // Simpan pilihan sesi ke localStorage setiap kali berubah
+  useEffect(() => {
+    localStorage.setItem('rinjani_last_result_session', selectedSession);
+  }, [selectedSession]);
 
   // Live 1-second clock ticker for countdown
   useEffect(() => {
@@ -685,13 +694,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   return (
     <div className="space-y-5 font-sans text-slate-100">
       
-      {/* 1. TOP HEADER TOOLBAR SECTION (COMPACT & SLIM HEIGHT, STICKY BELOW HEADER) */}
+      {/* 1. TOP HEADER TOOLBAR SECTION */}
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
-        {/* LEFT COLUMN: Action Controls (Top / Red Box Area) & Title (Bottom) */}
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1">
           
-          {/* TOP LEFT (Red Box Area): Action Buttons Row */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Shift Session Selector */}
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-2xl px-3 py-1.5 text-xs sm:text-sm text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
@@ -707,7 +714,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               </select>
             </div>
 
-            {/* Audio / Mute Toggle */}
             <button
               type="button"
               onClick={() => {
@@ -715,12 +721,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 addToast(isMuted ? 'Suara notifikasi diaktifkan.' : 'Suara notifikasi dibisukan.', 'info');
               }}
               className="p-2 bg-[#181a2c] border-2 border-[#ccff00]/50 text-[#ccff00] hover:text-white rounded-2xl transition-all cursor-pointer hover:border-[#ccff00]"
-              title={isMuted ? 'Unmute Suara' : 'Mute Suara'}
             >
               {isMuted ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-[#ccff00]" />}
             </button>
 
-            {/* Alarm Config Button */}
             <button
               type="button"
               onClick={() => setShowAlarmConfigModal(true)}
@@ -730,7 +734,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <span>ALARM CFG</span>
             </button>
 
-            {/* Add Pasaran Button */}
             <button
               type="button"
               onClick={handleOpenAddModal}
@@ -740,19 +743,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <span>ADD PASARAN</span>
             </button>
 
-            {/* Reset Sesi Button */}
             <button
               type="button"
               onClick={handleResetSession}
               className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-[0_0_18px_rgba(245,158,11,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider border border-amber-300/80 font-heading"
-              title="Reset Angka Input & Status Result untuk Sesi Terpilih"
             >
               <RotateCcw className="w-4 h-4 stroke-[2.5]" />
               <span>RESET SESI</span>
             </button>
           </div>
 
-          {/* BOTTOM LEFT: Title Block */}
           <div className="flex items-center gap-2.5 pt-1">
             <div className="p-2 bg-[#ccff00]/10 border border-[#ccff00] rounded-xl shadow-[0_0_12px_rgba(204,255,0,0.4)]">
               <Zap className="w-5 h-5 text-[#ccff00] animate-pulse" />
@@ -769,19 +769,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
         </div>
 
-        {/* RIGHT COLUMN: Terminal Prize Container */}
         <div className="relative w-full lg:w-[480px] xl:w-[520px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-2.5 pt-4 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-2">
-          {/* Top-Left Floating Badge */}
           <div className="absolute -top-3 left-4 bg-[#ccff00] text-slate-950 font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg uppercase tracking-wider shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80]">
             TERMINAL PRIZE
           </div>
 
           <div className="flex flex-col gap-2">
-            {/* RESULT STATUS Input + DONE Button Box (Above P1) */}
             <form onSubmit={handleProcessResultStatusInput} className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="CROSSCHECK CATATAN LOG / RESULT STATUS (e.g. periode : 2079 ;pasar : SINGAPORE)"
+                placeholder="CROSSCHECK CATATAN LOG / RESULT STATUS"
                 value={resultStatusInput}
                 onChange={(e) => setResultStatusInput(e.target.value)}
                 className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/50 focus:border-[#ccff00]"
@@ -789,13 +786,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <button
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_12px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
-                title="Submit Result Status"
               >
                 <span>DONE</span>
               </button>
             </form>
 
-            {/* P1 Input + Button Box (Middle) */}
             <form onSubmit={handleProcessP1Terminal} className="flex items-center gap-2">
               <input
                 type="text"
@@ -807,13 +802,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <button
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
-                title="Submit Result P1"
               >
                 <span>P1</span>
               </button>
             </form>
 
-            {/* P123 Input + Button Box (Bottom) */}
             <form onSubmit={handleProcessP123Terminal} className="flex items-center gap-2">
               <textarea
                 rows={2}
@@ -825,7 +818,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <button
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-3.5 h-14 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
-                title="Submit Result P123"
               >
                 <span>P123</span>
               </button>
@@ -835,7 +827,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       </div>
 
-         {/* 2. MAIN PASARAN RESULT LIST TABLE CONTAINER */}
+      {/* 2. MAIN PASARAN RESULT LIST TABLE CONTAINER */}
       <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-320px)] min-h-[350px] overflow-y-auto custom-scrollbar">
         <table className="w-full text-left border-collapse min-w-[900px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
@@ -872,31 +864,26 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                       : ''
                   }`}
                 >
-                  {/* Sesh Tag */}
                   <td className="py-2.5 px-3">
                     <span className="text-[9px] font-bold text-[#ccff00] border border-[#ccff00]/40 bg-[#0d0f1a] px-2 py-0.5 rounded-md uppercase tracking-wider font-heading">
                       {item.session}
                     </span>
                   </td>
 
-                  {/* Nama Pasaran */}
                   <td className="py-2.5 px-3">
                     <span className="font-heading font-black text-[#ccff00] tracking-wide uppercase text-xs group-hover:text-[#e5ff80] drop-shadow-[0_0_6px_rgba(204,255,0,0.3)]">
                       {item.name}
                     </span>
                   </td>
 
-                  {/* Jam Tutup */}
                   <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-mono-code">
                     {item.jamTutup}
                   </td>
 
-                  {/* Jam Result */}
                   <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-mono-code">
                     {item.jamResult}
                   </td>
 
-                  {/* Live Link Button */}
                   <td className="py-2.5 px-3 text-center">
                     {(() => {
                       const urls = getUrlsFromItem(item);
@@ -921,27 +908,22 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     })()}
                   </td>
 
-                  {/* Result Status Indicator */}
                   <td className="py-2.5 px-3 text-center">
                     {renderResultStatusBadge(item)}
                   </td>
 
-                  {/* P1 Prize */}
                   <td className="py-2.5 px-3 text-center font-black text-[#ccff00] tracking-widest text-xs font-mono-code drop-shadow-[0_0_6px_rgba(204,255,0,0.4)]">
                     {item.p1Prize || '-'}
                   </td>
 
-                  {/* P2 Prize */}
                   <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest text-xs font-mono-code">
                     {item.p2Prize || '-'}
                   </td>
 
-                  {/* P3 Prize */}
                   <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest text-xs font-mono-code">
                     {item.p3Prize || '-'}
                   </td>
 
-                  {/* Action Status Badge (BELUM / DONE / LIBUR) */}
                   <td className="py-2.5 px-3 text-center">
                     <div
                       className={`inline-block font-black text-[10px] px-3 py-1 rounded-xl tracking-wider uppercase shadow-sm font-heading cursor-default select-none ${
@@ -951,13 +933,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                           ? 'bg-[#ccff00] text-slate-950 border border-[#e5ff80] shadow-[0_0_12px_rgba(204,255,0,0.6)] font-black'
                           : 'bg-amber-500/30 text-amber-300 border-2 border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
                       }`}
-                      title={`Status Pasaran: ${item.status}`}
                     >
                       {item.status}
                     </div>
                   </td>
 
-                  {/* Opsi Buttons Cluster */}
                   <td className="py-2.5 px-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
@@ -995,7 +975,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </table>
       </div>
 
-      {/* 4. MODAL FOR ADDING / EDITING PASARAN */}
+      {/* MODAL ADD/EDIT PASARAN */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-lg p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
@@ -1083,14 +1063,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 </div>
                 <textarea
                   rows={3}
-                  placeholder={"https://totomacau.com\nhttps://livedrawmacau.com\nhttps://officialmacau.com"}
+                  placeholder={"https://totomacau.com\nhttps://livedrawmacau.com"}
                   value={formLinkUrl}
                   onChange={(e) => setFormLinkUrl(e.target.value)}
                   className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  * Bisa masukkan 3 link atau lebih (pisahkan dengan baris baru / koma). Ketika tombol Live Link diklik di tabel, <span className="text-[#ccff00] font-bold">semua link akan langsung terbuka sekaligus</span> di tab baru.
-                </p>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -1130,7 +1107,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer font-heading"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold font-heading"
                 >
                   Batal
                 </button>
@@ -1147,18 +1124,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 5. ACTIVE ALARM POPUP MODAL (WUKONG / RINJANI ALARM RESULT) */}
+      {/* ACTIVE ALARM POPUP MODAL */}
       {activeAlarm && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
             
-            {/* Top Badge Icon & Title */}
             <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]">
               <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
               <span>RINJANI ALARM RESULT</span>
             </div>
 
-            {/* Main Headline */}
             <div className="space-y-3">
               <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
                 {activeAlarm.title || `RESULT ${activeAlarm.pasaranName} ${activeAlarm.p1Prize || ''}`.trim()}
@@ -1169,7 +1144,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               </div>
             </div>
 
-            {/* OK / TUTUP Button */}
             <div className="pt-2">
               <button
                 type="button"
@@ -1179,16 +1153,14 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 OK / TUTUP
               </button>
             </div>
-
-            {/* Instruction Footer Note */}
             <p className="text-[11px] sm:text-xs text-slate-400 font-mono-code font-bold tracking-wide">
-              Klik OK / tekan SPASI / tekan ESC untuk menghentikan alarm dan menutup tab ini.
+              Klik OK / tekan SPASI / tekan ESC untuk menghentikan alarm.
             </p>
           </div>
         </div>
       )}
 
-      {/* 6. ALARM CONFIGURATION MODAL */}
+      {/* ALARM CONFIGURATION MODAL */}
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-md p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
@@ -1197,7 +1169,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <div className="flex items-center gap-2">
                 <AlarmClock className="w-5 h-5 text-[#ccff00]" />
                 <h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">
-                  KONFIGURASI ALARM RESULT
+                  KONFIGURASI ALARM
                 </h3>
               </div>
               <button
@@ -1210,11 +1182,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
 
             <div className="space-y-4 text-xs font-mono-code">
-              {/* Toggle Auto Alarm Popup */}
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
                 <div>
                   <div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div>
-                  <div className="text-slate-400 text-[10px]">Bunyikan alarm saat cooldown jam result habis</div>
+                  <div className="text-slate-400 text-[10px]">Bunyikan alarm saat jam result habis</div>
                 </div>
                 <input
                   type="checkbox"
@@ -1224,11 +1195,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 />
               </div>
 
-              {/* Mute Sound Option */}
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
                 <div>
-                  <div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine / Audio</div>
-                  <div className="text-slate-400 text-[10px]">{isMuted ? 'Suara Dibisukan (Muted)' : 'Suara Nyala (Aktif)'}</div>
+                  <div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div>
+                  <div className="text-slate-400 text-[10px]">{isMuted ? 'Muted' : 'Aktif'}</div>
                 </div>
                 <button
                   type="button"
@@ -1242,25 +1212,24 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 </button>
               </div>
 
-              {/* Test Alarm Popup Button */}
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAlarmConfigModal(false);
                     triggerAlarm({
-                      pasaranName: 'JAKARTA 1400',
-                      jamTutup: '13:50 WIB',
-                      jamResult: '13:55 WIB',
-                      p1Prize: '1400',
+                      pasaranName: 'TEST ALARM',
+                      jamTutup: '00:00 WIB',
+                      jamResult: '00:00 WIB',
+                      p1Prize: 'TEST',
                       session: 'SORE',
-                      title: 'RESULT JAKARTA 1400',
+                      title: 'UJI COBA ALARM BERHASIL',
                     });
                   }}
                   className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading"
                 >
                   <Play className="w-4 h-4 fill-slate-950" />
-                  <span>UJI COBA ALARM (TEST POPUP)</span>
+                  <span>TEST ALARM (TEST POPUP)</span>
                 </button>
               </div>
             </div>
@@ -1279,12 +1248,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 6. MODAL POPUP HASIL RESULT & REKAPAN SHIO (%) */}
+      {/* MODAL HASIL RESULT & SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-w-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
             
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#1c223a] pb-3.5">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.2)]">
@@ -1295,7 +1263,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     HASIL RESULT &amp; SHIO
                   </h3>
                   <p className="text-xs text-slate-400 font-medium">
-                    {popupPasaran.name} ({popupPasaran.jamResult || popupPasaran.jamTutup})
+                    {popupPasaran.name}
                   </p>
                 </div>
               </div>
@@ -1308,26 +1276,23 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               </button>
             </div>
 
-            {/* Stats Summary Cards */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Result P1 Card */}
               <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                  RESULT P1 (PRIZE 1)
+                  RESULT P1
                 </span>
                 <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1 drop-shadow-[0_0_10px_rgba(204,255,0,0.4)]">
                   {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '2502'}
                 </div>
               </div>
 
-              {/* Shio Card */}
               {(() => {
                 const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '2502';
                 const shio = calculateShio(res);
                 return (
                   <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                      PERHITUNGAN SHIO
+                      SHIO
                     </span>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-2xl">{shio.emoji}</span>
@@ -1335,35 +1300,24 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         {shio.name}
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono-code mt-1">
-                      {shio.formula}
-                    </span>
                   </div>
                 );
               })()}
             </div>
 
-            {/* Preview Box / Textarea */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-[#ccff00]" />
-                  Teks Rekapan Hasil (Siap Copy)
-                </label>
-                <span className="text-[10px] text-slate-500 font-mono-code">Dapat diedit jika perlu</span>
-              </div>
-
-              <div className="relative">
-                <textarea
-                  value={popupText}
-                  onChange={(e) => setPopupText(e.target.value)}
-                  rows={7}
-                  className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#ccff00] transition-all"
-                />
-              </div>
+              <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-[#ccff00]" />
+                Teks Rekapan
+              </label>
+              <textarea
+                value={popupText}
+                onChange={(e) => setPopupText(e.target.value)}
+                rows={7}
+                className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#ccff00] transition-all"
+              />
             </div>
 
-            {/* Modal Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
               <button
                 type="button"
@@ -1377,27 +1331,17 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(popupText);
-                  addToast('✅ Teks hasil result berhasil disalin!', 'success');
+                  addToast('✅ Berhasil disalin!', 'success');
                   setIsCopied(true);
                   setTimeout(() => setIsCopied(false), 2000);
                 }}
                 className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${
                   isCopied
-                    ? 'bg-emerald-400 text-slate-950 border border-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                    ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                     : 'bg-[#ccff00] hover:bg-[#b8e600] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'
                 }`}
               >
-                {isCopied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Tersalin!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Salin Teks Result
-                  </>
-                )}
+                {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
               </button>
             </div>
 
