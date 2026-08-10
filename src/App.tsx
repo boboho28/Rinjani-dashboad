@@ -56,7 +56,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Kontrol Sinkronisasi
+  // Sync Locks
   const isSyncingFromCloud = useRef(false);
   const hasEverLoaded = useRef(false);
 
@@ -65,6 +65,7 @@ export default function App() {
     const unsubAuth = subscribeAuthState((profile) => setCurrentUser(profile));
     
     const unsubData = subscribeToAppData((cloudData) => {
+      // KUNCI: Jangan biarkan auto-save berjalan saat sedang update state dari cloud
       isSyncingFromCloud.current = true;
       
       if (cloudData) {
@@ -73,14 +74,13 @@ export default function App() {
         if (Array.isArray(cloudData.reports)) setReports(cloudData.reports);
         if (Array.isArray(cloudData.pasaranList)) setPasaranList(cloudData.pasaranList);
         if (cloudData.tickerText) setTickerText(cloudData.tickerText);
-        console.log("Data Berhasil Dimuat dari Cloud:", cloudData.templates.length, "item.");
       }
       
       hasEverLoaded.current = true;
       setIsLoading(false);
       
-      // Matikan flag setelah state benar-benar selesai diupdate
-      setTimeout(() => { isSyncingFromCloud.current = false; }, 1500);
+      // Buka kunci setelah state stabil
+      setTimeout(() => { isSyncingFromCloud.current = false; }, 2000);
     });
 
     return () => { unsubAuth(); unsubData(); };
@@ -88,10 +88,10 @@ export default function App() {
 
   // --- 2. UPLOAD DATA KE CLOUD (AUTO-SAVE) ---
   useEffect(() => {
-    // JANGAN SIMPAN jika: Loading awal, sedang download dari cloud, atau belum login
+    // JANGAN SIMPAN jika: Sedang loading, sedang download, atau belum login
     if (!hasEverLoaded.current || isSyncingFromCloud.current || !currentUser) return;
 
-    const performAutoSave = async () => {
+    const autoSave = async () => {
       try {
         await saveAppDataToFirestore({
           mainMenus,
@@ -102,15 +102,15 @@ export default function App() {
           tickerText
         });
       } catch (err: any) {
-        addToast("Gagal Sync: " + (err.message || "Undefined found"), "error");
+        // Abaikan error background sync sementara
       }
     };
 
-    const timeout = setTimeout(performAutoSave, 3000);
+    const timeout = setTimeout(autoSave, 3000);
     return () => clearTimeout(timeout);
   }, [categories, templates, reports, pasaranList, tickerText, currentUser]);
 
-  // --- Handlers ---
+  // --- UI Handlers ---
   const addToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, type, text }]);
@@ -130,7 +130,7 @@ export default function App() {
   const handleCopyImage = async (imageUrl: string, id?: string) => {
     if (id) setCopiedId(id);
     const success = await copyImageToClipboard(imageUrl);
-    addToast(success ? 'Gambar berhasil disalin!' : 'Link gambar disalin.', 'success');
+    addToast(success ? 'Gambar disalin ke Clipboard!' : 'Link disalin.', 'success');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -138,11 +138,11 @@ export default function App() {
     const now = new Date().toISOString();
     if (id) {
       setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...data, updatedAt: now } : t));
-      addToast('Data Cloud diperbarui!', 'success');
+      addToast('Data Cloud diperbarui.', 'success');
     } else {
       const newItem = { ...data, id: 'tpl-' + Date.now(), createdAt: now, updatedAt: now };
       setTemplates(prev => [newItem, ...prev]);
-      addToast('Data baru masuk ke Cloud!', 'success');
+      addToast('Data baru ditambahkan ke Cloud.', 'success');
     }
   };
 
@@ -160,14 +160,14 @@ export default function App() {
   const handleAddCategory = (catData: any) => {
     const newCat = { ...catData, id: 'cat-' + Date.now(), order: categories.length + 1 };
     setCategories(prev => [...prev, newCat]);
-    addToast('Sub-Menu berhasil dibuat!', 'success');
+    addToast('Sub-Menu berhasil dibuat.', 'success');
   };
 
   const handleDeleteCategory = (id: string) => {
-    if (window.confirm('Hapus sub-menu ini? Semua data di dalamnya akan ikut terhapus.')) {
+    if (window.confirm('Hapus sub-menu ini? Isi didalamnya akan ikut terhapus.')) {
       setCategories(prev => prev.filter(c => c.id !== id));
       setTemplates(prev => prev.filter(t => t.categoryId !== id));
-      addToast('Sub-Menu terhapus.', 'info');
+      addToast('Sub-Menu dihapus.', 'info');
     }
   };
 
@@ -198,7 +198,7 @@ export default function App() {
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
         <div className="text-center space-y-6">
           <RotateCw className="w-16 h-16 text-lime-400 animate-spin mx-auto" />
-          <h1 className="text-lime-400 font-brand font-black text-xl tracking-widest animate-pulse uppercase">Sinkronisasi Cloud...</h1>
+          <h1 className="text-lime-400 font-brand font-black text-xl tracking-widest animate-pulse uppercase">Menghubungkan Cloud...</h1>
         </div>
       </div>
     );
@@ -240,9 +240,9 @@ export default function App() {
           {!currentUser ? (
              <div className="bg-[#121322] border-2 border-amber-500/50 rounded-3xl p-16 text-center space-y-5 shadow-2xl">
                 <Sparkles className="w-10 h-10 text-amber-400 mx-auto" />
-                <h2 className="text-2xl font-black text-amber-400 font-brand uppercase tracking-tighter">DATABASE TERKUNCI</h2>
-                <p className="text-slate-400 text-sm max-w-md mx-auto">Silakan Login untuk sinkronisasi data dari Cloud Firebase.</p>
-                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-3.5 rounded-2xl font-black transition-all">LOGIN SEKARANG</button>
+                <h2 className="text-2xl font-black text-amber-400 font-brand uppercase tracking-tighter">SISTEM TERKUNCI</h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">Anda harus masuk menggunakan akun yang terdaftar untuk sinkronisasi database Togelup-Crypto secara otomatis.</p>
+                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-3.5 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg">LOGIN SEKARANG</button>
              </div>
           ) : (
             <div className="flex flex-col md:flex-row gap-6">
@@ -270,7 +270,7 @@ export default function App() {
                       <h2 className="text-2xl font-black text-lime-400 uppercase tracking-tight font-brand">
                         {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA'}
                       </h2>
-                      <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs transition-all">
+                      <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs shadow-md transition-all active:scale-95">
                         + TAMBAH DATA
                       </button>
                     </div>
@@ -278,7 +278,7 @@ export default function App() {
                     {sortedTemplates.length === 0 ? (
                       <div className="p-24 text-center bg-[#121322] rounded-2xl border-2 border-dashed border-slate-800">
                         <FolderOpen className="w-14 h-14 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">Belum ada data di cloud.</p>
+                        <p className="text-slate-500 font-bold uppercase tracking-widest">Database Cloud Kosong.</p>
                       </div>
                     ) : (
                       <div className={`grid gap-5 ${isWideMode ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
