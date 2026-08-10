@@ -47,7 +47,7 @@ export interface FirebaseConfigType {
 }
 
 /**
- * Mengambil konfigurasi aktif (Kustom > Env > Default)
+ * Mengambil konfigurasi aktif
  */
 export function getActiveFirebaseConfig(): FirebaseConfigType {
   const env = (import.meta as any).env || {};
@@ -150,10 +150,6 @@ export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
 
 // --- FUNGSI DATABASE GLOBAL (SHARED) ---
 
-/**
- * FIXED DOC ID: 'shared_dashboard_data'
- * Ini memastikan semua PC yang membuka link ini melihat data yang SAMA.
- */
 const getSharedDocRef = () => {
   return doc(db, 'app_data', 'shared_dashboard_data');
 };
@@ -169,14 +165,18 @@ export interface AppDataPayload {
 }
 
 export function subscribeToAppData(onData: (data: AppDataPayload | null) => void) {
+  // Gunakan onSnapshot untuk memantau perubahan data secara real-time
   return onSnapshot(getSharedDocRef(), (docSnap) => {
     if (docSnap.exists()) {
       onData(docSnap.data() as AppDataPayload);
     } else {
+      // Jika dokumen belum ada sama sekali di Firebase
       onData(null);
     }
   }, (err) => {
     console.error('Firestore Error:', err);
+    // Jika error (misal: Permission Denied), tetap kirim null agar loading berhenti
+    onData(null);
   });
 }
 
@@ -188,5 +188,6 @@ export async function saveAppDataToFirestore(data: AppDataPayload) {
     }, { merge: true });
   } catch (err) {
     console.error('Save Firestore Error:', err);
+    throw err;
   }
 }
