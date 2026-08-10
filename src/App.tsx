@@ -21,9 +21,7 @@ import { copyImageToClipboard } from './utils/copyImage';
 import { subscribeToAppData, saveAppDataToFirestore, subscribeAuthState, UserProfile } from './lib/firebase';
 import {
   RotateCw,
-  SlidersHorizontal,
   FolderOpen,
-  Plus,
   Sparkles,
 } from 'lucide-react';
 
@@ -34,7 +32,7 @@ export default function App() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [pasaranList, setPasaranList] = useState<PasaranItem[]>(INITIAL_PASARAN_LIST);
-  const [tickerText, setTickerText] = useState("Selamat Datang di RINJANI SYSTEM - DASHBOARD PENYIMPANAN DATA");
+  const [tickerText, setTickerText] = useState("RINJANI SYSTEM - DASHBOARD PENYIMPANAN DATA & KATA-KATA TERPADU");
   
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMainMenuId, setSelectedMainMenuId] = useState<string | null>('menu-pk-live-chat');
@@ -58,44 +56,38 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Mencegah looping simpan data
   const isRemoteUpdate = useRef(false);
+  const hasLoadedData = useRef(false);
 
-  // --- Realtime Sync Logic ---
+  // --- 1. SINKRONISASI AWAL (AUTH & DATA) ---
   useEffect(() => {
-    // 1. Pantau Auth
     const unsubAuth = subscribeAuthState((profile) => {
       setCurrentUser(profile);
     });
     
-    // 2. Pantau Data Cloud
     const unsubData = subscribeToAppData((cloudData) => {
+      isRemoteUpdate.current = true;
       if (cloudData) {
-        isRemoteUpdate.current = true;
         if (cloudData.categories) setCategories(cloudData.categories);
         if (cloudData.templates) setTemplates(cloudData.templates);
         if (cloudData.reports) setReports(cloudData.reports);
         if (cloudData.pasaranList) setPasaranList(cloudData.pasaranList);
         if (cloudData.tickerText) setTickerText(cloudData.tickerText);
-        
-        setIsLoading(false);
-        // Reset flag update agar tidak loop
-        setTimeout(() => { isRemoteUpdate.current = false; }, 1000);
-      } else {
-        // Jika data cloud kosong (awal project), matikan loading agar user bisa input
-        setIsLoading(false);
       }
+      hasLoadedData.current = true;
+      setIsLoading(false);
+      // Tunggu sebentar sebelum mengizinkan simpan lokal
+      setTimeout(() => { isRemoteUpdate.current = false; }, 2000);
     });
 
-    return () => {
-      unsubAuth();
-      unsubData();
-    };
+    return () => { unsubAuth(); unsubData(); };
   }, []);
 
-  // Simpan data ke Firebase saat ada perubahan lokal
+  // --- 2. LOGIKA SIMPAN KE CLOUD ---
   useEffect(() => {
-    // Jangan simpan jika sedang loading atau data baru saja datang dari cloud
-    if (isLoading || isRemoteUpdate.current || !currentUser) return;
+    // SYARAT SIMPAN: Sudah login, Loading Selesai, Bukan update dari Cloud, Data sudah pernah di-load
+    if (isLoading || isRemoteUpdate.current || !currentUser || !hasLoadedData.current) return;
 
     const timeout = setTimeout(() => {
       saveAppDataToFirestore({
@@ -105,15 +97,16 @@ export default function App() {
         reports,
         pasaranList,
         tickerText
-      }).catch(() => {
-        addToast("Gagal menyimpan ke Cloud. Cek koneksi/izin.", "error");
+      }).catch((err) => {
+        console.error("Firebase Save Error:", err);
+        addToast("Gagal menyimpan ke Cloud. Pastikan Rules Firebase sudah diupdate!", "error");
       });
-    }, 1500);
+    }, 2000); // Jeda 2 detik setelah ketikan berhenti
 
     return () => clearTimeout(timeout);
   }, [categories, templates, reports, pasaranList, tickerText, currentUser, isLoading]);
 
-  // --- Handlers ---
+  // --- UI Handlers ---
   const addToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, type, text }]);
@@ -133,7 +126,7 @@ export default function App() {
   const handleCopyImage = async (imageUrl: string, id?: string) => {
     if (id) setCopiedId(id);
     const success = await copyImageToClipboard(imageUrl);
-    addToast(success ? 'Gambar berhasil disalin!' : 'Link gambar disalin.', 'success');
+    addToast(success ? 'Gambar berhasil disalin!' : 'Link disalin ke clipboard.', 'success');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -145,14 +138,14 @@ export default function App() {
     } else {
       const newItem = { ...data, id: 'tpl-' + Date.now(), createdAt: now, updatedAt: now };
       setTemplates(prev => [newItem, ...prev]);
-      addToast('Data baru ditambahkan!', 'success');
+      addToast('Data ditambahkan ke Cloud!', 'success');
     }
   };
 
   const handleDeleteTemplate = (id: string) => {
-    if (window.confirm('Hapus data ini secara permanen dari Cloud?')) {
+    if (window.confirm('Hapus data ini secara permanen dari Database Cloud?')) {
       setTemplates(prev => prev.filter(t => t.id !== id));
-      addToast('Data dihapus.', 'info');
+      addToast('Data dihapus dari Cloud.', 'info');
     }
   };
 
@@ -167,14 +160,13 @@ export default function App() {
   };
 
   const handleDeleteCategory = (id: string) => {
-    if (window.confirm('Hapus sub-menu ini? Semua data di dalamnya akan hilang.')) {
+    if (window.confirm('Hapus sub-menu ini? Seluruh isi di dalamnya akan ikut terhapus.')) {
       setCategories(prev => prev.filter(c => c.id !== id));
       setTemplates(prev => prev.filter(t => t.categoryId !== id));
       addToast('Sub-Menu dihapus.', 'info');
     }
   };
 
-  // --- Filtering ---
   const filteredTemplates = useMemo(() => {
     return templates.filter((item) => {
       if (selectedMainMenuId && item.mainMenuId !== selectedMainMenuId) return false;
@@ -196,24 +188,16 @@ export default function App() {
     });
   }, [filteredTemplates, sortBy]);
 
-  // View Loading
+  // View Loading Screen
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
         <div className="text-center space-y-6">
           <RotateCw className="w-16 h-16 text-lime-400 animate-spin mx-auto" />
           <div className="space-y-2">
-            <p className="text-lime-400 font-brand font-black text-lg tracking-widest animate-pulse">MENYINKRONKAN DATABASE CLOUD...</p>
-            <p className="text-slate-500 text-xs">Pastikan Anda sudah login untuk melihat data.</p>
+            <h1 className="text-lime-400 font-brand font-black text-xl tracking-widest animate-pulse">RINJANI CLOUD SINKRONISASI</h1>
+            <p className="text-slate-500 text-xs">Menghubungkan ke Project Togelup-Crypto...</p>
           </div>
-          {!currentUser && (
-            <button 
-              onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-2 bg-lime-400 text-black font-black rounded-xl text-sm"
-            >
-              LOGIN SEKARANG
-            </button>
-          )}
         </div>
       </div>
     );
@@ -249,18 +233,17 @@ export default function App() {
           onImportBackup={() => {}}
         />
 
-        <TickerBar 
-          tickerText={tickerText} 
-          setTickerText={setTickerText} 
-        />
+        <TickerBar tickerText={tickerText} setTickerText={setTickerText} />
 
         <main className="w-full pt-5 px-6">
           {!currentUser ? (
-             <div className="bg-[#121322] border-2 border-amber-500/50 rounded-2xl p-10 text-center space-y-4">
-                <Sparkles className="w-12 h-12 text-amber-400 mx-auto" />
-                <h2 className="text-xl font-black text-amber-400">AKSES TERBATAS</h2>
-                <p className="text-slate-400 text-sm max-w-md mx-auto">Silakan login terlebih dahulu untuk mengakses dan menyimpan data PK ke server Cloud Firebase.</p>
-                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 text-black px-8 py-3 rounded-xl font-black">MASUK / LOGIN</button>
+             <div className="bg-[#121322] border-2 border-amber-500/50 rounded-3xl p-16 text-center space-y-5 shadow-2xl">
+                <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto border border-amber-500/30">
+                  <Sparkles className="w-10 h-10 text-amber-400" />
+                </div>
+                <h2 className="text-2xl font-black text-amber-400 font-brand">DATABASE TERKUNCI</h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">Sistem Rinjani mendeteksi Anda belum login. Silakan masuk agar data dapat ditarik dari Cloud Firebase secara otomatis.</p>
+                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-3.5 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg shadow-amber-900/40">LOGIN SEKARANG</button>
              </div>
           ) : (
             <div className="flex flex-col md:flex-row gap-6">
@@ -285,24 +268,24 @@ export default function App() {
                 ) : (
                   <>
                     <div className="bg-[#121322] border border-[#23253b] rounded-2xl p-5 flex justify-between items-center shadow-lg">
-                      <h2 className="text-2xl font-black text-lime-400 uppercase tracking-tight">
-                        {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA'}
+                      <h2 className="text-2xl font-black text-lime-400 uppercase tracking-tight font-brand">
+                        {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA PK'}
                       </h2>
                       <div className="flex gap-3">
-                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bg-[#181a2c] border border-[#262842] rounded-xl px-3 py-2 text-xs text-white outline-none">
-                          <option value="terbaru">Urutan: Terbaru</option>
-                          <option value="terlama">Urutan: Terlama</option>
+                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bg-[#181a2c] border border-[#262842] rounded-xl px-4 py-2 text-xs text-white outline-none cursor-pointer">
+                          <option value="terbaru">Terbaru</option>
+                          <option value="terlama">Terlama</option>
                         </select>
-                        <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl font-black text-xs shadow-lg shadow-lime-900/40 hover:scale-105 transition-transform">
-                          + ADD DATA
+                        <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs shadow-lg shadow-lime-900/40 transition-all">
+                          + TAMBAH DATA
                         </button>
                       </div>
                     </div>
 
                     {sortedTemplates.length === 0 ? (
-                      <div className="p-20 text-center bg-[#121322] rounded-2xl border-2 border-dashed border-slate-800">
-                        <FolderOpen className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">Belum ada data di cloud.</p>
+                      <div className="p-24 text-center bg-[#121322] rounded-2xl border-2 border-dashed border-slate-800">
+                        <FolderOpen className="w-14 h-14 text-slate-700 mx-auto mb-4" />
+                        <p className="text-slate-500 font-bold uppercase tracking-widest">Belum ada data di Cloud Togelup-Crypto</p>
                       </div>
                     ) : (
                       <div className={`grid gap-5 ${isWideMode ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
