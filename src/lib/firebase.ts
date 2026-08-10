@@ -80,24 +80,6 @@ if (typeof window !== 'undefined' && activeConfig.measurementId) {
   getAnalytics(app);
 }
 
-// --- FUNGSI PEMBERSIH DATA (PENTING UNTUK FIX ERROR UNDEFINED) ---
-
-/**
- * Fungsi rekursif untuk menghapus nilai 'undefined' agar Firestore tidak error
- */
-function sanitizeData(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(v => sanitizeData(v));
-  } else if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj)
-        .filter(([_, v]) => v !== undefined)
-        .map(([k, v]) => [k, sanitizeData(v)])
-    );
-  }
-  return obj;
-}
-
 // --- FUNGSI AUTENTIKASI ---
 
 export async function registerUser(email: string, pass: string, displayName: string, role: string = 'member'): Promise<UserProfile> {
@@ -197,22 +179,26 @@ export function subscribeToAppData(onData: (data: AppDataPayload | null) => void
 }
 
 export async function saveAppDataToFirestore(data: AppDataPayload) {
-  if (!auth.currentUser) throw new Error("Anda harus login untuk menyimpan data.");
+  if (!auth.currentUser) return;
   
   try {
     const docRef = getSharedDocRef();
     
-    // BERSIHKAN DATA DARI NILAI UNDEFINED SEBELUM DIKIRIM
-    const cleanData = sanitizeData(data);
+    /**
+     * TEKNIK PEMBERSIH DATA PALING AMPUH:
+     * JSON.stringify secara otomatis menghapus properti yang bernilai 'undefined'.
+     * Ini akan memastikan error "Unsupported field value: undefined" hilang selamanya.
+     */
+    const cleanData = JSON.parse(JSON.stringify(data));
 
     await setDoc(docRef, {
       ...cleanData,
       updatedAt: Date.now(),
     }, { merge: true });
     
-    console.log("Sinkronisasi Cloud Berhasil.");
+    console.log("Data Cloud Berhasil Disimpan.");
   } catch (err: any) {
-    console.error('Save Firestore Error:', err);
+    console.error('Save Firestore Error Detail:', err);
     throw err;
   }
 }
