@@ -180,23 +180,37 @@ export function subscribeToAppData(onData: (data: AppDataPayload | null) => void
       onData(null);
     }
   }, (err) => {
-    console.error('Firestore Error:', err);
+    console.error('Firestore Read Error:', err);
     onData(null);
   });
 }
 
 export async function saveAppDataToFirestore(data: AppDataPayload) {
-  // Pastikan user login sebelum mencoba menyimpan
-  if (!auth.currentUser) throw new Error("User not authenticated");
+  if (!auth.currentUser) throw new Error("Anda harus login untuk menyimpan data.");
   
   try {
     const docRef = getSharedDocRef();
+    
+    // Validasi Ukuran (Estimasi sederhana untuk Base64)
+    const jsonString = JSON.stringify(data);
+    const sizeInBytes = new Blob([jsonString]).size;
+    const sizeInMb = sizeInBytes / (1024 * 1024);
+    
+    if (sizeInMb > 0.9) {
+      console.warn(`Peringatan: Ukuran database hampir penuh (${sizeInMb.toFixed(2)}MB / 1MB). Kurangi jumlah gambar Base64.`);
+    }
+
     await setDoc(docRef, {
       ...data,
       updatedAt: Date.now(),
     }, { merge: true });
-  } catch (err) {
-    console.error('Save Firestore Error:', err);
+    
+    console.log("Data berhasil disinkronkan ke Cloud.");
+  } catch (err: any) {
+    console.error('Save Firestore Error Detail:', err);
+    if (err.code === 'too-many-requests' || err.message.includes('large')) {
+      throw new Error("Gagal: Ukuran data (gambar) terlalu besar untuk database Firebase.");
+    }
     throw err;
   }
 }
