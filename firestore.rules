@@ -1,8 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Izinkan user yang login untuk membaca dan menulis data profil mereka sendiri
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Izinkan semua user yang sudah login untuk membaca & menulis ke database GLOBAL
+    // Ini agar data sinkron di semua PC asal login dengan akun apapun yang terdaftar
+    match /app_data/shared_dashboard_data {
+      allow read, write: if request.auth != null;
     }
   }
 }
