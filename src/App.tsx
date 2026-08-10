@@ -34,7 +34,7 @@ export default function App() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [pasaranList, setPasaranList] = useState<PasaranItem[]>(INITIAL_PASARAN_LIST);
-  const [tickerText, setTickerText] = useState("Selamat Datang di RINJANI SYSTEM");
+  const [tickerText, setTickerText] = useState("Selamat Datang di RINJANI SYSTEM - DASHBOARD PENYIMPANAN DATA");
   
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMainMenuId, setSelectedMainMenuId] = useState<string | null>('menu-pk-live-chat');
@@ -62,9 +62,12 @@ export default function App() {
 
   // --- Realtime Sync Logic ---
   useEffect(() => {
-    const unsubAuth = subscribeAuthState((profile) => setCurrentUser(profile));
+    // 1. Pantau Auth
+    const unsubAuth = subscribeAuthState((profile) => {
+      setCurrentUser(profile);
+    });
     
-    // Berlangganan data GLOBAL
+    // 2. Pantau Data Cloud
     const unsubData = subscribeToAppData((cloudData) => {
       if (cloudData) {
         isRemoteUpdate.current = true;
@@ -73,9 +76,12 @@ export default function App() {
         if (cloudData.reports) setReports(cloudData.reports);
         if (cloudData.pasaranList) setPasaranList(cloudData.pasaranList);
         if (cloudData.tickerText) setTickerText(cloudData.tickerText);
+        
         setIsLoading(false);
-        setTimeout(() => { isRemoteUpdate.current = false; }, 500);
+        // Reset flag update agar tidak loop
+        setTimeout(() => { isRemoteUpdate.current = false; }, 1000);
       } else {
+        // Jika data cloud kosong (awal project), matikan loading agar user bisa input
         setIsLoading(false);
       }
     });
@@ -88,7 +94,8 @@ export default function App() {
 
   // Simpan data ke Firebase saat ada perubahan lokal
   useEffect(() => {
-    if (isLoading || isRemoteUpdate.current) return;
+    // Jangan simpan jika sedang loading atau data baru saja datang dari cloud
+    if (isLoading || isRemoteUpdate.current || !currentUser) return;
 
     const timeout = setTimeout(() => {
       saveAppDataToFirestore({
@@ -98,11 +105,13 @@ export default function App() {
         reports,
         pasaranList,
         tickerText
+      }).catch(() => {
+        addToast("Gagal menyimpan ke Cloud. Cek koneksi/izin.", "error");
       });
-    }, 1000);
+    }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [categories, templates, reports, pasaranList, tickerText]);
+  }, [categories, templates, reports, pasaranList, tickerText, currentUser, isLoading]);
 
   // --- Handlers ---
   const addToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -132,15 +141,16 @@ export default function App() {
     const now = new Date().toISOString();
     if (id) {
       setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...data, updatedAt: now } : t));
+      addToast('Data diperbarui!', 'success');
     } else {
       const newItem = { ...data, id: 'tpl-' + Date.now(), createdAt: now, updatedAt: now };
       setTemplates(prev => [newItem, ...prev]);
+      addToast('Data baru ditambahkan!', 'success');
     }
-    addToast('Data berhasil disimpan ke Cloud!', 'success');
   };
 
   const handleDeleteTemplate = (id: string) => {
-    if (window.confirm('Hapus data ini?')) {
+    if (window.confirm('Hapus data ini secara permanen dari Cloud?')) {
       setTemplates(prev => prev.filter(t => t.id !== id));
       addToast('Data dihapus.', 'info');
     }
@@ -186,12 +196,24 @@ export default function App() {
     });
   }, [filteredTemplates, sortBy]);
 
+  // View Loading
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <RotateCw className="w-12 h-12 text-lime-400 animate-spin mx-auto" />
-          <p className="text-lime-400 font-brand font-black animate-pulse">MENYINKRONKAN DATABASE CLOUD...</p>
+        <div className="text-center space-y-6">
+          <RotateCw className="w-16 h-16 text-lime-400 animate-spin mx-auto" />
+          <div className="space-y-2">
+            <p className="text-lime-400 font-brand font-black text-lg tracking-widest animate-pulse">MENYINKRONKAN DATABASE CLOUD...</p>
+            <p className="text-slate-500 text-xs">Pastikan Anda sudah login untuk melihat data.</p>
+          </div>
+          {!currentUser && (
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-6 py-2 bg-lime-400 text-black font-black rounded-xl text-sm"
+            >
+              LOGIN SEKARANG
+            </button>
+          )}
         </div>
       </div>
     );
@@ -233,64 +255,73 @@ export default function App() {
         />
 
         <main className="w-full pt-5 px-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {selectedMainMenuId !== 'menu-dashboard-result' && (
-              <SubMenuBar
-                categories={categories.filter(c => c.mainMenuId === selectedMainMenuId)}
-                selectedCategoryId={selectedCategoryId}
-                onSelectCategory={setSelectedCategoryId}
-                categoryCounts={{}}
-                totalCount={filteredTemplates.length}
-                mainMenuName={mainMenus.find(m => m.id === selectedMainMenuId)?.name || ''}
-                onAddSubMenu={(name, color) => handleAddCategory({ name, color, mainMenuId: selectedMainMenuId })}
-                onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
-                onAddPkForCategory={() => setIsAddModalOpen(true)}
-                onDeleteCategory={handleDeleteCategory}
-              />
-            )}
-
-            <section className="flex-1 space-y-5">
-              {selectedMainMenuId === 'menu-dashboard-result' ? (
-                <DashboardResultView pasaranList={pasaranList} setPasaranList={setPasaranList} addToast={addToast} />
-              ) : (
-                <>
-                  <div className="bg-[#121322] border border-[#23253b] rounded-2xl p-5 flex justify-between items-center">
-                    <h2 className="text-2xl font-black text-lime-400 uppercase">
-                      {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA'}
-                    </h2>
-                    <div className="flex gap-3">
-                      <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bg-[#181a2c] border border-[#262842] rounded-xl px-3 py-2 text-xs text-white">
-                        <option value="terbaru">Terbaru</option>
-                        <option value="terlama">Terlama</option>
-                      </select>
-                      <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl font-black text-xs shadow-lg shadow-lime-900/20">
-                        + TAMBAH DATA
-                      </button>
-                    </div>
-                  </div>
-
-                  {sortedTemplates.length === 0 ? (
-                    <div className="p-20 text-center bg-[#121322] rounded-2xl border border-dashed border-slate-700">
-                      <FolderOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                      <p className="text-slate-400">Belum ada data di sini.</p>
-                    </div>
-                  ) : (
-                    <div className={`grid gap-5 ${isWideMode ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
-                      {sortedTemplates.map((item) => (
-                        item.mainMenuId === 'menu-gambar' || item.imageUrl ? (
-                          <ImageCard key={item.id} item={item} onCopyImage={handleCopyImage} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={handleTogglePin} copiedId={copiedId} />
-                        ) : item.mainMenuId === 'menu-link-bookmark' ? (
-                          <BookmarkCard key={item.id} item={item} onCopyLink={handleCopyText} onEdit={setEditItem} onDelete={handleDeleteTemplate} onUpdateLinks={(id, links) => setTemplates(prev => prev.map(t => t.id === id ? { ...t, links } : t))} copiedId={copiedId} />
-                        ) : (
-                          <TemplateCard key={item.id} item={item} onCopy={handleCopyText} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={handleTogglePin} copiedId={copiedId} />
-                        )
-                      ))}
-                    </div>
-                  )}
-                </>
+          {!currentUser ? (
+             <div className="bg-[#121322] border-2 border-amber-500/50 rounded-2xl p-10 text-center space-y-4">
+                <Sparkles className="w-12 h-12 text-amber-400 mx-auto" />
+                <h2 className="text-xl font-black text-amber-400">AKSES TERBATAS</h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">Silakan login terlebih dahulu untuk mengakses dan menyimpan data PK ke server Cloud Firebase.</p>
+                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 text-black px-8 py-3 rounded-xl font-black">MASUK / LOGIN</button>
+             </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-6">
+              {selectedMainMenuId !== 'menu-dashboard-result' && (
+                <SubMenuBar
+                  categories={categories.filter(c => c.mainMenuId === selectedMainMenuId)}
+                  selectedCategoryId={selectedCategoryId}
+                  onSelectCategory={setSelectedCategoryId}
+                  categoryCounts={{}}
+                  totalCount={filteredTemplates.length}
+                  mainMenuName={mainMenus.find(m => m.id === selectedMainMenuId)?.name || ''}
+                  onAddSubMenu={(name, color) => handleAddCategory({ name, color, mainMenuId: selectedMainMenuId })}
+                  onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
+                  onAddPkForCategory={() => setIsAddModalOpen(true)}
+                  onDeleteCategory={handleDeleteCategory}
+                />
               )}
-            </section>
-          </div>
+
+              <section className="flex-1 space-y-5">
+                {selectedMainMenuId === 'menu-dashboard-result' ? (
+                  <DashboardResultView pasaranList={pasaranList} setPasaranList={setPasaranList} addToast={addToast} />
+                ) : (
+                  <>
+                    <div className="bg-[#121322] border border-[#23253b] rounded-2xl p-5 flex justify-between items-center shadow-lg">
+                      <h2 className="text-2xl font-black text-lime-400 uppercase tracking-tight">
+                        {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA'}
+                      </h2>
+                      <div className="flex gap-3">
+                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bg-[#181a2c] border border-[#262842] rounded-xl px-3 py-2 text-xs text-white outline-none">
+                          <option value="terbaru">Urutan: Terbaru</option>
+                          <option value="terlama">Urutan: Terlama</option>
+                        </select>
+                        <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl font-black text-xs shadow-lg shadow-lime-900/40 hover:scale-105 transition-transform">
+                          + ADD DATA
+                        </button>
+                      </div>
+                    </div>
+
+                    {sortedTemplates.length === 0 ? (
+                      <div className="p-20 text-center bg-[#121322] rounded-2xl border-2 border-dashed border-slate-800">
+                        <FolderOpen className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                        <p className="text-slate-500 font-bold uppercase tracking-widest">Belum ada data di cloud.</p>
+                      </div>
+                    ) : (
+                      <div className={`grid gap-5 ${isWideMode ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
+                        {sortedTemplates.map((item) => (
+                          item.mainMenuId === 'menu-gambar' || item.imageUrl ? (
+                            <ImageCard key={item.id} item={item} onCopyImage={handleCopyImage} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={handleTogglePin} copiedId={copiedId} />
+                          ) : item.mainMenuId === 'menu-link-bookmark' ? (
+                            <BookmarkCard key={item.id} item={item} onCopyLink={handleCopyText} onEdit={setEditItem} onDelete={handleDeleteTemplate} onUpdateLinks={(id, links) => setTemplates(prev => prev.map(t => t.id === id ? { ...t, links } : t))} copiedId={copiedId} />
+                          ) : (
+                            <TemplateCard key={item.id} item={item} onCopy={handleCopyText} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={handleTogglePin} copiedId={copiedId} />
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
+          )}
         </main>
       </div>
 
