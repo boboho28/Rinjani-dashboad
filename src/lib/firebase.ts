@@ -80,6 +80,24 @@ if (typeof window !== 'undefined' && activeConfig.measurementId) {
   getAnalytics(app);
 }
 
+// --- FUNGSI PEMBERSIH DATA (PENTING UNTUK FIX ERROR UNDEFINED) ---
+
+/**
+ * Fungsi rekursif untuk menghapus nilai 'undefined' agar Firestore tidak error
+ */
+function sanitizeData(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(v => sanitizeData(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, sanitizeData(v)])
+    );
+  }
+  return obj;
+}
+
 // --- FUNGSI AUTENTIKASI ---
 
 export async function registerUser(email: string, pass: string, displayName: string, role: string = 'member'): Promise<UserProfile> {
@@ -149,13 +167,6 @@ export function subscribeAuthState(callback: (userProfile: UserProfile | null, l
   });
 }
 
-export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
-  const snap = await getDocs(collection(db, 'users'));
-  const list: UserProfile[] = [];
-  snap.forEach((d) => list.push(d.data() as UserProfile));
-  return list;
-}
-
 // --- FUNGSI DATABASE GLOBAL (SHARED) ---
 
 const getSharedDocRef = () => {
@@ -191,26 +202,17 @@ export async function saveAppDataToFirestore(data: AppDataPayload) {
   try {
     const docRef = getSharedDocRef();
     
-    // Validasi Ukuran (Estimasi sederhana untuk Base64)
-    const jsonString = JSON.stringify(data);
-    const sizeInBytes = new Blob([jsonString]).size;
-    const sizeInMb = sizeInBytes / (1024 * 1024);
-    
-    if (sizeInMb > 0.9) {
-      console.warn(`Peringatan: Ukuran database hampir penuh (${sizeInMb.toFixed(2)}MB / 1MB). Kurangi jumlah gambar Base64.`);
-    }
+    // BERSIHKAN DATA DARI NILAI UNDEFINED SEBELUM DIKIRIM
+    const cleanData = sanitizeData(data);
 
     await setDoc(docRef, {
-      ...data,
+      ...cleanData,
       updatedAt: Date.now(),
     }, { merge: true });
     
-    console.log("Data berhasil disinkronkan ke Cloud.");
+    console.log("Sinkronisasi Cloud Berhasil.");
   } catch (err: any) {
-    console.error('Save Firestore Error Detail:', err);
-    if (err.code === 'too-many-requests' || err.message.includes('large')) {
-      throw new Error("Gagal: Ukuran data (gambar) terlalu besar untuk database Firebase.");
-    }
+    console.error('Save Firestore Error:', err);
     throw err;
   }
 }
