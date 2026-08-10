@@ -80,6 +80,18 @@ if (typeof window !== 'undefined' && activeConfig.measurementId) {
   getAnalytics(app);
 }
 
+// --- FUNGSI PEMBERSIH DATA (ANTIDOTE UNTUK ERROR UNDEFINED) ---
+
+/**
+ * Membersihkan objek secara mendalam. 
+ * Mengubah 'undefined' menjadi 'null' karena Firestore melarang 'undefined'.
+ */
+const sanitizeData = (data: any): any => {
+  return JSON.parse(
+    JSON.stringify(data, (key, value) => (value === undefined ? null : value))
+  );
+};
+
 // --- FUNGSI AUTENTIKASI ---
 
 export async function registerUser(email: string, pass: string, displayName: string, role: string = 'member'): Promise<UserProfile> {
@@ -149,6 +161,23 @@ export function subscribeAuthState(callback: (userProfile: UserProfile | null, l
   });
 }
 
+/**
+ * MENGEMBALIKAN FUNGSI YANG HILANG (Penting untuk Vercel Build)
+ */
+export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const list: UserProfile[] = [];
+    snap.forEach((d) => {
+      list.push(d.data() as UserProfile);
+    });
+    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } catch (err) {
+    console.error('Gagal mengambil daftar user:', err);
+    return [];
+  }
+}
+
 // --- FUNGSI DATABASE GLOBAL (SHARED) ---
 
 const getSharedDocRef = () => {
@@ -184,21 +213,17 @@ export async function saveAppDataToFirestore(data: AppDataPayload) {
   try {
     const docRef = getSharedDocRef();
     
-    /**
-     * TEKNIK PEMBERSIH DATA PALING AMPUH:
-     * JSON.stringify secara otomatis menghapus properti yang bernilai 'undefined'.
-     * Ini akan memastikan error "Unsupported field value: undefined" hilang selamanya.
-     */
-    const cleanData = JSON.parse(JSON.stringify(data));
+    // MEMBERSIHKAN DATA SECARA TOTAL DARI NILAI UNDEFINED
+    const cleanData = sanitizeData(data);
 
     await setDoc(docRef, {
       ...cleanData,
       updatedAt: Date.now(),
     }, { merge: true });
     
-    console.log("Data Cloud Berhasil Disimpan.");
+    console.log("Sinkronisasi Cloud Berhasil.");
   } catch (err: any) {
-    console.error('Save Firestore Error Detail:', err);
+    console.error('Gagal menyimpan ke Firestore:', err);
     throw err;
   }
 }
