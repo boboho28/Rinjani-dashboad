@@ -136,7 +136,15 @@ export function subscribeAuthState(callback: (userProfile: UserProfile | null, l
     if (snap.exists()) {
       callback(snap.data() as UserProfile, false);
     } else {
-      callback(null, false);
+      const fallback: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        displayName: firebaseUser.displayName || 'User',
+        role: 'member',
+        createdAt: Date.now(),
+        lastLogin: Date.now(),
+      };
+      callback(fallback, false);
     }
   });
 }
@@ -165,24 +173,25 @@ export interface AppDataPayload {
 }
 
 export function subscribeToAppData(onData: (data: AppDataPayload | null) => void) {
-  // Gunakan onSnapshot untuk memantau perubahan data secara real-time
   return onSnapshot(getSharedDocRef(), (docSnap) => {
     if (docSnap.exists()) {
       onData(docSnap.data() as AppDataPayload);
     } else {
-      // Jika dokumen belum ada sama sekali di Firebase
       onData(null);
     }
   }, (err) => {
     console.error('Firestore Error:', err);
-    // Jika error (misal: Permission Denied), tetap kirim null agar loading berhenti
     onData(null);
   });
 }
 
 export async function saveAppDataToFirestore(data: AppDataPayload) {
+  // Pastikan user login sebelum mencoba menyimpan
+  if (!auth.currentUser) throw new Error("User not authenticated");
+  
   try {
-    await setDoc(getSharedDocRef(), {
+    const docRef = getSharedDocRef();
+    await setDoc(docRef, {
       ...data,
       updatedAt: Date.now(),
     }, { merge: true });
