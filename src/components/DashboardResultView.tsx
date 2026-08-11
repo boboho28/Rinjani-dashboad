@@ -283,6 +283,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     return item.session === selectedSession;
   });
 
+  // --- LOGIKA SORTING BERDASARKAN JAM TUTUP (00:00 TERATAS) ---
+  const sortedFilteredList = [...filteredList].sort((a, b) => {
+    const getTimeValue = (jamStr: string) => {
+      const match = jamStr.match(/(\d{1,2}):(\d{2})/);
+      if (!match) return 0;
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      return hours * 60 + minutes;
+    };
+    return getTimeValue(a.jamTutup) - getTimeValue(b.jamTutup);
+  });
+
   const handleOpenAddModal = () => {
     setEditItem(null);
     setFormName('');
@@ -846,14 +858,14 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ccff00]/10 text-xs font-mono-code">
-            {filteredList.length === 0 ? (
+            {sortedFilteredList.length === 0 ? (
               <tr>
                 <td colSpan={11} className="py-12 text-center text-slate-500 font-body">
                   Tidak ada pasaran untuk sesi {selectedSession}.
                 </td>
               </tr>
             ) : (
-              filteredList.map((item) => (
+              sortedFilteredList.map((item) => (
                 <tr
                   key={item.id}
                   className={`hover:bg-[#ccff00]/5 transition-all group ${
