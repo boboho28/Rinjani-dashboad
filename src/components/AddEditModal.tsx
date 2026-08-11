@@ -3,11 +3,11 @@ import { MainMenuItem, CategoryItem, TemplateItem } from '../types';
 import { X, Save, PlusCircle, Upload, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
 /**
- * Kompresi Gambar Dioptimalkan (Balance antara Kejernihan & Ukuran Dokumen)
- * Resolusi 1000px sudah sangat cukup untuk membaca teks pada screenshot
- * Kualitas 0.7 menjaga ukuran file agar bisa menampung banyak data di Firebase
+ * Kompresi Gambar Cerdas (Sangat Ringan & Tetap Terbaca)
+ * maxDim 800px: Ukuran ideal untuk screenshot HP agar teks tetap tajam.
+ * quality 0.5: Memangkas ukuran file hingga 90% agar database muat banyak gambar.
  */
-export function compressBase64Image(dataUrl: string, maxDim = 1000, quality = 0.7): Promise<string> {
+export function compressBase64Image(dataUrl: string, maxDim = 800, quality = 0.5): Promise<string> {
   return new Promise((resolve) => {
     if (!dataUrl || !dataUrl.startsWith('data:image/')) {
       resolve(dataUrl);
@@ -18,6 +18,7 @@ export function compressBase64Image(dataUrl: string, maxDim = 1000, quality = 0.
       let width = img.width;
       let height = img.height;
 
+      // Logika Resize jika melebihi 800px
       if (width > maxDim || height > maxDim) {
         if (width > height) {
           height = Math.round((height * maxDim) / width);
@@ -33,6 +34,7 @@ export function compressBase64Image(dataUrl: string, maxDim = 1000, quality = 0.
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        // Smoothing untuk mencegah gambar rabun saat diperkecil
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         
@@ -40,7 +42,7 @@ export function compressBase64Image(dataUrl: string, maxDim = 1000, quality = 0.
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Gunakan JPEG untuk efisiensi ukuran data yang maksimal
+        // Output JPEG sangat krusial agar file ringan (PNG terlalu berat)
         resolve(canvas.toDataURL('image/jpeg', quality));
       } else {
         resolve(dataUrl);
@@ -198,7 +200,7 @@ export const AddEditModal: React.FC<AddEditModalProps> = ({
             <div className="space-y-4 bg-[#0d0e19] border border-[#232644] p-4 rounded-xl">
               <label className="block text-xs font-bold text-lime-400 uppercase">Upload Gambar</label>
               <label className="w-full flex flex-col items-center justify-center gap-2 bg-[#1a1c33] text-lime-300 border border-dashed border-lime-500/40 font-bold text-xs py-5 rounded-xl cursor-pointer hover:bg-[#202342] transition-all">
-                <Upload className="w-5 h-5" /> <span>Klik Pilih Gambar</span>
+                <Upload className="w-5 h-5" /> <span>Pilih Gambar (Auto Compress)</span>
                 <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
               </label>
               {imageUrl && (
@@ -209,24 +211,24 @@ export const AddEditModal: React.FC<AddEditModalProps> = ({
               )}
                <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">Catatan Gambar</label>
-                <textarea value={ket} onChange={(e) => setKet(e.target.value)} rows={3} className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-3 text-xs text-white outline-none" />
+                <textarea value={ket} onChange={(e) => setKet(e.target.value)} rows={3} className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-3 text-xs text-white outline-none" placeholder="Isi catatan jika ada..." />
               </div>
             </div>
           ) : isBookmarkMenu ? (
              <div>
               <label className="block text-xs font-bold text-lime-400 uppercase mb-1.5">Daftar URL Link</label>
-              <textarea value={linksText} onChange={(e) => setLinksText(e.target.value)} rows={4} required placeholder="Contoh: Nama Link | https://url.com" className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-3 text-xs text-cyan-300 font-mono" />
+              <textarea value={linksText} onChange={(e) => setLinksText(e.target.value)} rows={4} required placeholder="Nama Link | https://url.com" className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-3 text-xs text-cyan-300 font-mono" />
             </div>
           ) : (
             <div>
               <label className="block text-xs font-bold text-lime-400 uppercase mb-1.5">Isi Kata-Kata PK</label>
-              <textarea value={ket} onChange={(e) => setKet(e.target.value)} required rows={8} className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-4 text-white outline-none leading-relaxed" />
+              <textarea value={ket} onChange={(e) => setKet(e.target.value)} required rows={8} className="w-full bg-[#181a2b] border border-[#2c2f4a] rounded-xl p-4 text-white outline-none leading-relaxed" placeholder="Tulis template kata-kata..." />
             </div>
           )}
 
           <div className="pt-4 flex justify-end gap-3 border-t border-[#212338]">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 bg-[#1c1e30] text-slate-300 rounded-xl text-xs font-bold">Batal</button>
-            <button type="submit" className="px-7 py-2.5 bg-lime-400 text-black rounded-xl text-xs font-black shadow-lg shadow-lime-900/40 hover:bg-lime-300 active:scale-95 transition-all">SIMPAN KE CLOUD</button>
+            <button type="button" onClick={onClose} className="px-5 py-2.5 bg-[#1c1e30] text-slate-300 rounded-xl text-xs font-bold hover:bg-[#262942]">Batal</button>
+            <button type="submit" className="px-7 py-2.5 bg-lime-400 text-black rounded-xl text-xs font-black shadow-lg shadow-lime-900/40 hover:bg-lime-300 active:scale-95 transition-all uppercase">Simpan ke Cloud</button>
           </div>
         </form>
       </div>
