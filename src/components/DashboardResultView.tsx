@@ -575,32 +575,35 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     }
   };
 
-  // --- RESULT STATUS / CROSSCHECK TERMINAL PARSER ---
+  // --- RESULT STATUS / CROSSCHECK TERMINAL PARSER (UPDATE: VALIDASI PERIODE & NAMA PASARAN) ---
   const handleProcessResultStatusInput = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resultStatusInput.trim()) {
-      addToast('Masukkan status result atau nomor (contoh: TOTOMACAU SORE 2502 atau 2502)', 'error');
+    const rawStr = resultStatusInput.trim().toUpperCase();
+
+    if (!rawStr) {
+      addToast('Input tidak boleh kosong.', 'error');
       return;
     }
 
-    const rawStr = resultStatusInput.trim().toUpperCase();
+    // VALIDASI KHUSUS: Harus ada kata "PERIODE"
+    if (!rawStr.includes("PERIODE")) {
+      addToast('Input Gagal! Harus mengandung kata "PERIODE" (contoh: periode : 686 ;pasar : TOTO MACAU PAGI)', 'error');
+      return;
+    }
+
     const matchedItem = findTargetPasaran(rawStr);
 
     if (!matchedItem) {
-      addToast(`Tidak ada pasaran yang dapat diperbarui.`, 'error');
+      addToast(`Nama pasaran dalam log tidak ditemukan di database dashboard.`, 'error');
       return;
     }
 
-    // Extract numbers from input if any
-    const numbers = rawStr.match(/\d+/g) || [];
-    const p1Val = numbers.length > 0 ? numbers[0] : null;
-
+    // Update status menjadi DONE
     setPasaranList((prev) =>
       prev.map((item) =>
         item.id === matchedItem.id
           ? {
               ...item,
-              ...(p1Val ? { p1Prize: p1Val } : {}),
               status: 'DONE',
               isResultNow: false,
             }
@@ -609,7 +612,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     );
 
     addToast(
-      `✅ Status ${matchedItem.name} berhasil diubah ke SUDAH RESULT (DONE)${p1Val ? ` [P1: ${p1Val}]` : ''}!`,
+      `✅ Validasi Berhasil! ${matchedItem.name} diubah menjadi SUDAH RESULT (DONE).`,
       'success'
     );
     setResultStatusInput('');
