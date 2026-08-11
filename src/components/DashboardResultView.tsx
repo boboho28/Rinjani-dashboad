@@ -920,25 +920,20 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* UPDATE: LOADER ANIMASI SEBAGAI TOMBOL LINK */}
+                    {/* UPDATE: LOADER ANIMASI SEBAGAI TOMBOL LINK (ANGKA DIHAPUS) */}
                     {(() => {
                       const urls = getUrlsFromItem(item);
                       if (urls.length === 0) {
                         return <span className="text-slate-600">-</span>;
                       }
                       return (
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center">
                            <button
                             type="button"
                             onClick={() => handleOpenAllLinks(item)}
                             className="link-loader"
                             title={`Buka ${urls.length} Link Sekaligus`}
                           />
-                          {urls.length > 1 && (
-                            <span className="font-bold text-[9px] bg-[#ccff00]/20 px-1.5 py-0.5 rounded-full text-[#ccff00] border border-[#ccff00]/30 font-mono-code">
-                              {urls.length}
-                            </span>
-                          )}
                         </div>
                       );
                     })()}
