@@ -897,22 +897,22 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3">
-                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN */}
-                    <span className="font-brand font-black italic uppercase text-xs tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,2.5px_2.5px_0_#4c1d95,0_0_12px_rgba(34,211,238,0.7)] group-hover:scale-105 transition-transform inline-block">
+                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN (UKURAN DIPERBESAR) */}
+                    <span className="font-brand font-black italic uppercase text-[14px] tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,3px_3px_0_#4c1d95,0_0_15px_rgba(34,211,238,0.7)] group-hover:scale-110 transition-transform inline-block">
                       {item.name}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK JAM TUTUP (WARNA REVERSE) */}
-                    <span className="font-mono-code font-black italic text-[11px] tracking-tight text-[#e879f9] [text-shadow:1px_1px_0_#1e1b4b,0_0_8px_rgba(232,121,249,0.5)]">
+                    {/* CYBER STYLE UNTUK JAM TUTUP (UKURAN DIPERBESAR) */}
+                    <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
                       {item.jamTutup}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK JAM RESULT */}
-                    <span className="font-mono-code font-black italic text-[11px] tracking-tight text-[#e879f9] [text-shadow:1px_1px_0_#1e1b4b,0_0_8px_rgba(232,121,249,0.5)]">
+                    {/* CYBER STYLE UNTUK JAM RESULT (UKURAN DIPERBESAR) */}
+                    <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
                       {item.jamResult}
                     </span>
                   </td>
@@ -946,22 +946,22 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER 3D STYLE UNTUK P1 (HIGHLIGHTED) */}
-                    <span className="font-mono-code font-black italic tracking-widest text-[13px] text-white [text-shadow:1px_1px_0_#9333ea,2px_2px_0_#4c1d95,0_0_15px_#22d3ee]">
+                    {/* CYBER 3D STYLE UNTUK P1 (UKURAN DIPERBESAR) */}
+                    <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p1Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P2 */}
-                    <span className="font-mono-code font-black italic tracking-widest text-xs text-[#22d3ee]/90 [text-shadow:1px_1px_0_#4c1d95,0_0_5px_rgba(34,211,238,0.4)]">
+                    {/* CYBER STYLE UNTUK P2 (UKURAN DIPERBESAR) */}
+                    <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P3 */}
-                    <span className="font-mono-code font-black italic tracking-widest text-xs text-[#22d3ee]/90 [text-shadow:1px_1px_0_#4c1d95,0_0_5px_rgba(34,211,238,0.4)]">
+                    {/* CYBER STYLE UNTUK P3 (UKURAN DIPERBESAR) */}
+                    <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p3Prize || '-'}
                     </span>
                   </td>
@@ -1293,7 +1293,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {/* MODAL HASIL RESULT & SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-w-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
             
             <div className="flex items-center justify-between border-b border-[#1c223a] pb-3.5">
               <div className="flex items-center gap-2.5">
