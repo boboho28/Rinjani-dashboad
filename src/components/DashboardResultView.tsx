@@ -882,35 +882,39 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   }`}
                 >
                   <td className="py-2.5 px-3">
-                    {/* UPDATE: NEON STYLE BUTTON UNTUK SESH SESUAI GAMBAR */}
+                    {/* NEON STYLE BUTTON UNTUK SESH (TETAP TERJAGA) */}
                     <div className="relative flex items-center h-7 w-fit bg-[#0a0518] rounded-md border border-[#8b5cf6]/50 overflow-hidden shadow-[0_0_8px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all">
-                      {/* Kontainer Ikon Bulat (Kiri) */}
                       <div className="flex items-center justify-center h-full aspect-square bg-gradient-to-b from-[#8b5cf6] to-[#4c1d95] shadow-[inset_0_0_4px_rgba(255,255,255,0.4)]">
                         <Zap className="w-3 h-3 text-white fill-white/20 animate-pulse" />
                       </div>
-                      {/* Label Teks (Tengah/Kanan) */}
                       <div className="px-3 h-full flex items-center bg-gradient-to-r from-[#1e0a3d] to-[#0a0518]">
                         <span className="text-[10px] font-black text-purple-100 italic tracking-tighter uppercase drop-shadow-[0_0_4px_rgba(167,139,250,0.8)] font-heading">
                           {item.session}
                         </span>
                       </div>
-                      {/* Neon Border Bawah Glowing */}
                       <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#a78bfa] to-transparent shadow-[0_0_8px_#a78bfa]" />
                     </div>
                   </td>
 
                   <td className="py-2.5 px-3">
-                    <span className="font-heading font-black text-[#ccff00] tracking-wide uppercase text-xs group-hover:text-[#e5ff80] drop-shadow-[0_0_6px_rgba(204,255,0,0.3)]">
+                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN */}
+                    <span className="font-brand font-black italic uppercase text-xs tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,2.5px_2.5px_0_#4c1d95,0_0_12px_rgba(34,211,238,0.7)] group-hover:scale-105 transition-transform inline-block">
                       {item.name}
                     </span>
                   </td>
 
-                  <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-mono-code">
-                    {item.jamTutup}
+                  <td className="py-2.5 px-3 text-center">
+                    {/* CYBER STYLE UNTUK JAM TUTUP (WARNA REVERSE) */}
+                    <span className="font-mono-code font-black italic text-[11px] tracking-tight text-[#e879f9] [text-shadow:1px_1px_0_#1e1b4b,0_0_8px_rgba(232,121,249,0.5)]">
+                      {item.jamTutup}
+                    </span>
                   </td>
 
-                  <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-mono-code">
-                    {item.jamResult}
+                  <td className="py-2.5 px-3 text-center">
+                    {/* CYBER STYLE UNTUK JAM RESULT */}
+                    <span className="font-mono-code font-black italic text-[11px] tracking-tight text-[#e879f9] [text-shadow:1px_1px_0_#1e1b4b,0_0_8px_rgba(232,121,249,0.5)]">
+                      {item.jamResult}
+                    </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
@@ -941,16 +945,25 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     {renderResultStatusBadge(item)}
                   </td>
 
-                  <td className="py-2.5 px-3 text-center font-black text-[#ccff00] tracking-widest text-xs font-mono-code drop-shadow-[0_0_6px_rgba(204,255,0,0.4)]">
-                    {item.p1Prize || '-'}
+                  <td className="py-2.5 px-3 text-center">
+                    {/* CYBER 3D STYLE UNTUK P1 (HIGHLIGHTED) */}
+                    <span className="font-mono-code font-black italic tracking-widest text-[13px] text-white [text-shadow:1px_1px_0_#9333ea,2px_2px_0_#4c1d95,0_0_15px_#22d3ee]">
+                      {item.p1Prize || '-'}
+                    </span>
                   </td>
 
-                  <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest text-xs font-mono-code">
-                    {item.p2Prize || '-'}
+                  <td className="py-2.5 px-3 text-center">
+                    {/* CYBER STYLE UNTUK P2 */}
+                    <span className="font-mono-code font-black italic tracking-widest text-xs text-[#22d3ee]/90 [text-shadow:1px_1px_0_#4c1d95,0_0_5px_rgba(34,211,238,0.4)]">
+                      {item.p2Prize || '-'}
+                    </span>
                   </td>
 
-                  <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest text-xs font-mono-code">
-                    {item.p3Prize || '-'}
+                  <td className="py-2.5 px-3 text-center">
+                    {/* CYBER STYLE UNTUK P3 */}
+                    <span className="font-mono-code font-black italic tracking-widest text-xs text-[#22d3ee]/90 [text-shadow:1px_1px_0_#4c1d95,0_0_5px_rgba(34,211,238,0.4)]">
+                      {item.p3Prize || '-'}
+                    </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
@@ -1306,81 +1319,3 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                  RESULT P1
-                </span>
-                {/* UPDATE: Strictly using data from the item row, no defaults */}
-                <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1 drop-shadow-[0_0_10px_rgba(204,255,0,0.4)]">
-                  {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}
-                </div>
-              </div>
-
-              {(() => {
-                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-';
-                const shio = calculateShio(res);
-                const hasResult = res !== '-';
-                
-                return (
-                  <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                      SHIO
-                    </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl">{hasResult ? shio.emoji : '❓'}</span>
-                      <span className="text-lg sm:text-xl font-black text-white tracking-wider font-heading">
-                        {hasResult ? shio.name : '-'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-[#ccff00]" />
-                Teks Rekapan
-              </label>
-              <textarea
-                value={popupText}
-                onChange={(e) => setPopupText(e.target.value)}
-                rows={7}
-                className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#ccff00] transition-all"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
-              <button
-                type="button"
-                onClick={() => setIsResultPopupOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#131728] hover:bg-[#1f253e] border border-[#262f50] rounded-xl transition-all"
-              >
-                Tutup
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(popupText);
-                  addToast('✅ Berhasil disalin!', 'success');
-                  setIsCopied(true);
-                  setTimeout(() => setIsCopied(false), 2000);
-                }}
-                className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${
-                  isCopied
-                    ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
-                    : 'bg-[#ccff00] hover:bg-[#b8e600] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'
-                }`}
-              >
-                {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-};
