@@ -236,7 +236,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const generateResultAnnouncement = (item: PasaranItem): string => {
-    const resultStr = (item.p1Prize && item.p1Prize !== '-') ? item.p1Prize : '2502';
+    // UPDATE: Tidak menggunakan fallback '2502' lagi
+    const hasResult = item.p1Prize && item.p1Prize !== '-';
+    const resultStr = hasResult ? item.p1Prize! : '-';
     const shioObj = calculateShio(resultStr);
     
     const now = new Date();
@@ -250,7 +252,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     
     const pasaranTitle = item.name;
     
-    return `Hasil Pengeluaran ${pasaranTitle}\nHari Ini ${dayName}, ${dateNum} ${monthName} ${year}\nResult : ${resultStr}\nSHIO : ${shioObj.name}\nSelamat Kepada Pemenang, Salam JP Hanya di TogelUP`;
+    return `Hasil Pengeluaran ${pasaranTitle}\nHari Ini ${dayName}, ${dateNum} ${monthName} ${year}\nResult : ${resultStr}\nSHIO : ${hasResult ? shioObj.name : '-'}\nSelamat Kepada Pemenang, Salam JP Hanya di TogelUP`;
   };
 
   const handleOpenResultPopup = (item: PasaranItem) => {
@@ -1296,23 +1298,26 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
                   RESULT P1
                 </span>
+                {/* UPDATE: Strictly using data from the item row, no defaults */}
                 <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1 drop-shadow-[0_0_10px_rgba(204,255,0,0.4)]">
-                  {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '2502'}
+                  {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}
                 </div>
               </div>
 
               {(() => {
-                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '2502';
+                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-';
                 const shio = calculateShio(res);
+                const hasResult = res !== '-';
+                
                 return (
                   <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
                       SHIO
                     </span>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl">{shio.emoji}</span>
+                      <span className="text-2xl">{hasResult ? shio.emoji : '❓'}</span>
                       <span className="text-lg sm:text-xl font-black text-white tracking-wider font-heading">
-                        {shio.name}
+                        {hasResult ? shio.name : '-'}
                       </span>
                     </div>
                   </div>
