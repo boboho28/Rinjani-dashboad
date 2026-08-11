@@ -1319,3 +1319,81 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
+                  RESULT P1
+                </span>
+                {/* UPDATE: Strictly using data from the item row, no defaults */}
+                <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1 drop-shadow-[0_0_10px_rgba(204,255,0,0.4)]">
+                  {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}
+                </div>
+              </div>
+
+              {(() => {
+                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-';
+                const shio = calculateShio(res);
+                const hasResult = res !== '-';
+                
+                return (
+                  <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
+                      SHIO
+                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-2xl">{hasResult ? shio.emoji : '❓'}</span>
+                      <span className="text-lg sm:text-xl font-black text-white tracking-wider font-heading">
+                        {hasResult ? shio.name : '-'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-[#ccff00]" />
+                Teks Rekapan
+              </label>
+              <textarea
+                value={popupText}
+                onChange={(e) => setPopupText(e.target.value)}
+                rows={7}
+                className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#ccff00] transition-all"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
+              <button
+                type="button"
+                onClick={() => setIsResultPopupOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#131728] hover:bg-[#1f253e] border border-[#262f50] rounded-xl transition-all"
+              >
+                Tutup
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(popupText);
+                  addToast('✅ Berhasil disalin!', 'success');
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2000);
+                }}
+                className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${
+                  isCopied
+                    ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                    : 'bg-[#ccff00] hover:bg-[#b8e600] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'
+                }`}
+              >
+                {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
