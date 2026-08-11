@@ -477,115 +477,215 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const renderResultStatusBadge = (item: PasaranItem) => {
     if (item.status === 'DONE') {
       return (
-        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-default select-none">
+        <div
+          className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-default select-none"
+          title="Status Result: SUDAH RESULT"
+        >
           SUDAH RESULT
         </div>
       );
     }
+
     if (item.status === 'LIBUR') {
       return (
-        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-amber-950/40 text-amber-300/80 border border-amber-500/30 cursor-default select-none">
+        <div
+          className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-amber-950/40 text-amber-300/80 border border-amber-500/30 cursor-default select-none"
+          title="Status Result: PASARAN LIBUR"
+        >
           PASARAN LIBUR
         </div>
       );
     }
+
+    // Parse jamTutup e.g. "15:00 WIB" or "15:00"
     const matchTutup = item.jamTutup.match(/(\d{1,2}):(\d{2})/);
     if (!matchTutup) {
       return (
-        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 cursor-default select-none">
+        <div
+          className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 cursor-default select-none"
+          title="Status Result: BELUM RESULT"
+        >
           BELUM RESULT
         </div>
       );
     }
+
     const hoursTutup = parseInt(matchTutup[1], 10);
     const minsTutup = parseInt(matchTutup[2], 10);
+
     const nowHours = currentTime.getHours();
     const nowMins = currentTime.getMinutes();
     const nowSecs = currentTime.getSeconds();
+
     const nowTotalSecs = nowHours * 3600 + nowMins * 60 + nowSecs;
     const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
+
     let diffSecs = tutupTotalSecs - nowTotalSecs;
 
     if (diffSecs > 0) {
       const h = Math.floor(diffSecs / 3600);
       const m = Math.floor((diffSecs % 3600) / 60);
       const s = diffSecs % 60;
+
       const pad = (n: number) => n.toString().padStart(2, '0');
       const countdownStr = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+
       return (
-        <div className="inline-block font-mono-code font-black text-[10px] px-2.5 py-1 rounded-full tracking-wider bg-cyan-950/80 text-cyan-300 border border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.3)] cursor-default select-none">
+        <div
+          className="inline-block font-mono-code font-black text-[10px] px-2.5 py-1 rounded-full tracking-wider bg-cyan-950/80 text-cyan-300 border border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.3)] cursor-default select-none"
+          title="Hitung Mundur ke Jam Tutup"
+        >
           ⏳ TUTUP: {countdownStr}
         </div>
       );
     } else {
       return (
-        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/60 shadow-[0_0_12px_rgba(217,70,239,0.7)] animate-pulse cursor-default select-none">
+        <div
+          className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/60 shadow-[0_0_12px_rgba(217,70,239,0.7)] animate-pulse cursor-default select-none"
+          title="Jam Tutup telah lewat, Menunggu Result"
+        >
           RESULT NOW!
         </div>
       );
     }
   };
 
-  // --- RESULT STATUS / CROSSCHECK TERMINAL PARSER ---
+  // --- RESULT STATUS / CROSSCHECK TERMINAL PARSER (UPDATE: VALIDASI PERIODE & NAMA PASARAN) ---
   const handleProcessResultStatusInput = (e: React.FormEvent) => {
     e.preventDefault();
     const rawStr = resultStatusInput.trim().toUpperCase();
-    if (!rawStr) return;
+
+    if (!rawStr) {
+      addToast('Input tidak boleh kosong.', 'error');
+      return;
+    }
+
+    // VALIDASI KHUSUS: Harus ada kata "PERIODE"
     if (!rawStr.includes("PERIODE")) {
-      addToast('Input Gagal! Harus mengandung kata "PERIODE"', 'error');
+      addToast('Input Gagal! Harus mengandung kata "PERIODE" (contoh: periode : 686 ;pasar : TOTO MACAU PAGI)', 'error');
       return;
     }
+
     const matchedItem = findTargetPasaran(rawStr);
+
     if (!matchedItem) {
-      addToast(`Pasaran tidak ditemukan.`, 'error');
+      addToast(`Nama pasaran dalam log tidak ditemukan di database dashboard.`, 'error');
       return;
     }
-    setPasaranList((prev) => prev.map((item) => item.id === matchedItem.id ? { ...item, status: 'DONE', isResultNow: false } : item));
-    addToast(`✅ Validasi Berhasil! ${matchedItem.name} menjadi DONE.`, 'success');
+
+    // Update status menjadi DONE
+    setPasaranList((prev) =>
+      prev.map((item) =>
+        item.id === matchedItem.id
+          ? {
+              ...item,
+              status: 'DONE',
+              isResultNow: false,
+            }
+          : item
+      )
+    );
+
+    addToast(
+      `✅ Validasi Berhasil! ${matchedItem.name} diubah menjadi SUDAH RESULT (DONE).`,
+      'success'
+    );
     setResultStatusInput('');
   };
 
+  // --- TERMINAL PRIZE DIRECT INPUT PARSING LOGIC ---
   const handleProcessP1Terminal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!p1TerminalInput.trim()) return;
-    const rawStr = p1TerminalInput.trim().toUpperCase();
-    const matchedItem = findTargetPasaran(rawStr);
-    if (!matchedItem) {
-      addToast(`Pasaran tidak ditemukan.`, 'error');
+    if (!p1TerminalInput.trim()) {
+      addToast('Masukkan nomor atau nama pasaran + nomor (contoh: TOTOMACAU SORE 5045 atau 5045)', 'error');
       return;
     }
+
+    const rawStr = p1TerminalInput.trim().toUpperCase();
+    const matchedItem = findTargetPasaran(rawStr);
+
+    if (!matchedItem) {
+      addToast(`Pasaran tidak ditemukan. Pastikan ada pasaran aktif.`, 'error');
+      return;
+    }
+
+    // Extract numbers
     const numbers = rawStr.match(/\d+/g) || [];
-    if (numbers.length === 0) return;
-    setPasaranList((prev) => prev.map((item) => item.id === matchedItem.id ? { ...item, p1Prize: numbers[0] } : item));
-    addToast(`✅ Result P1 ${matchedItem.name} (${numbers[0]}) OK!`, 'success');
+    if (numbers.length === 0) {
+      addToast(`Angka result tidak ditemukan dalam input. Contoh: ${matchedItem.name} 5045 atau 5045`, 'error');
+      return;
+    }
+
+    const p1Value = numbers[0];
+
+    setPasaranList((prev) =>
+      prev.map((item) =>
+        item.id === matchedItem.id
+          ? {
+              ...item,
+              p1Prize: p1Value,
+            }
+          : item
+      )
+    );
+
+    addToast(`✅ Result P1 ${matchedItem.name} (${p1Value}) berhasil di-input!`, 'success');
     setP1TerminalInput('');
   };
 
   const handleProcessP123Terminal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!p123TerminalInput.trim()) return;
+    if (!p123TerminalInput.trim()) {
+      addToast('Masukkan angka 3 prize (contoh: HUAHIN 1630 \\nPRIZE 1: 0574 \\nPRIZE 2: 5597 \\nPRIZE 3: 6047 atau 0574 5597 6047)', 'error');
+      return;
+    }
+
     let cleanStr = p123TerminalInput.trim().toUpperCase();
+    cleanStr = cleanStr.replace(/PRIZE\s*[123]:?/gi, ' ');
+    cleanStr = cleanStr.replace(/P[123]:?/gi, ' ');
+
     const matchedItem = findTargetPasaran(cleanStr);
+
     if (!matchedItem) {
       addToast(`Pasaran tidak ditemukan.`, 'error');
       return;
     }
+
     const numbers = cleanStr.match(/\d+/g) || [];
-    if (numbers.length === 0) return;
+    if (numbers.length === 0) {
+      addToast(`Angka result tidak ditemukan.`, 'error');
+      return;
+    }
+
     const p1Value = numbers[0] || '-';
     const p2Value = numbers[1] || '-';
     const p3Value = numbers[2] || '-';
-    setPasaranList((prev) => prev.map((item) => item.id === matchedItem.id ? { ...item, p1Prize: p1Value, p2Prize: p2Value, p3Prize: p3Value } : item));
-    addToast(`✅ Result P123 ${matchedItem.name} OK!`, 'success');
+
+    setPasaranList((prev) =>
+      prev.map((item) =>
+        item.id === matchedItem.id
+          ? {
+              ...item,
+              p1Prize: p1Value,
+              p2Prize: p2Value,
+              p3Prize: p3Value,
+            }
+          : item
+      )
+    );
+
+    addToast(
+      `✅ Result P123 ${matchedItem.name} (P1:${p1Value}, P2:${p2Value}, P3:${p3Value}) berhasil di-input!`,
+      'success'
+    );
     setP123TerminalInput('');
   };
 
   return (
     <div className="space-y-5 font-sans text-slate-100">
       
-      {/* CSS STYLES UNTUK SEMUA CUSTOM LOADERS (MATA & JAM DIGITAL) & EFEK LAINNYA */}
+      {/* STYLE UNTUK LOADER TOMBOL LINK SESUAI CSS PERMINTAAN */}
       <style>{`
-        /* EYE LOADER ANIMASI UNTUK TOMBOL LINK */
         .link-loader {
           display: inline-flex;
           gap: 10px;
@@ -610,42 +710,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
         }
         @keyframes l7 {
-          0%, 70% {background-size:100% 40%,8px 8px}
+          0%,
+          70% {background-size:100% 40%,8px 8px}
           85% {background-size:100% 120%,8px 8px}
           100% {background-size:100% 40%,8px 8px}
-        }
-
-        /* DIGITAL CLOCK LOADER UNTUK JAM TUTUP & JAM RESULT */
-        .digital-clock-style {
-          width: fit-content;
-          background: #000;
-          padding: 2px 10px;
-          font-size: 20px;
-          font-family: 'Courier New', Courier, monospace;
-          color: #fff;
-          font-weight: 900;
-          border-radius: 8px;
-          position: relative;
-          display: inline-block;
-          border: 1px solid #333;
-          box-shadow: inset 0 0 10px rgba(255,255,255,0.1), 0 4px 10px rgba(0,0,0,0.6);
-        }
-        .digital-clock-style::before {
-          content: attr(data-time);
-          white-space: pre;
-          animation: l8 .8s infinite steps(1);
-        }
-        .digital-clock-style::after {
-          content: "";
-          position: absolute;
-          inset: auto auto 100% 10px;
-          height: 4px;
-          width: 45%;
-          background: linear-gradient(90deg, #ff0000 40%, #0000 0 60%, #444 0);
-          margin-bottom: 3px;
-        }
-        @keyframes l8 {
-          50% { opacity: 0.4; }
         }
       `}</style>
       
@@ -655,6 +723,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1">
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Shift Session Selector */}
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-2xl px-3 py-1.5 text-xs sm:text-sm text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
               <select
                 value={selectedSession}
@@ -783,7 +852,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       {/* 2. MAIN PASARAN RESULT LIST TABLE CONTAINER */}
       <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-320px)] min-h-[350px] overflow-y-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse min-w-[1000px] relative">
+        <table className="w-full text-left border-collapse min-w-[900px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
             <tr className="border-b-2 border-[#ccff00]/40 text-[11px] font-mono-code uppercase text-[#ccff00] tracking-wider">
               <th className="py-3 px-3 sticky top-0 bg-[#0d1222] z-20">SESH</th>
@@ -819,7 +888,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   }`}
                 >
                   <td className="py-2.5 px-3">
-                    {/* NEON STYLE BUTTON UNTUK SESH (PURPLE VIBE) */}
                     <div className="relative flex items-center h-7 w-fit bg-[#0a0518] rounded-md border border-[#8b5cf6]/50 overflow-hidden shadow-[0_0_8px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all">
                       <div className="flex items-center justify-center h-full aspect-square bg-gradient-to-b from-[#8b5cf6] to-[#4c1d95] shadow-[inset_0_0_4px_rgba(255,255,255,0.4)]">
                         <Zap className="w-3 h-3 text-white fill-white/20 animate-pulse" />
@@ -834,27 +902,30 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3">
-                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN */}
                     <span className="font-brand font-black italic uppercase text-[14px] tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,3px_3px_0_#4c1d95,0_0_15px_rgba(34,211,238,0.7)] group-hover:scale-110 transition-transform inline-block">
                       {item.name}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* DIGITAL CLOCK STYLE UNTUK JAM TUTUP */}
-                    <div className="digital-clock-style" data-time={item.jamTutup.replace(' WIB', '')} />
+                    <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
+                      {item.jamTutup}
+                    </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* DIGITAL CLOCK STYLE UNTUK JAM RESULT */}
-                    <div className="digital-clock-style" data-time={item.jamResult.replace(' WIB', '')} />
+                    <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
+                      {item.jamResult}
+                    </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* EYE LOADER UNTUK TOMBOL LINK */}
+                    {/* UPDATE: LOADER ANIMASI SEBAGAI TOMBOL LINK (ANGKA DIHAPUS) */}
                     {(() => {
                       const urls = getUrlsFromItem(item);
-                      if (urls.length === 0) return <span className="text-slate-600">-</span>;
+                      if (urls.length === 0) {
+                        return <span className="text-slate-600">-</span>;
+                      }
                       return (
                         <div className="flex items-center justify-center">
                            <button
@@ -873,21 +944,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER 3D STYLE UNTUK P1 */}
                     <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p1Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P2 */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P3 */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p3Prize || '-'}
                     </span>
@@ -913,7 +981,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleOpenResultPopup(item)}
                         className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Hasil Result & Shio"
                       >
                         <Percent className="w-3.5 h-3.5" />
                       </button>
@@ -922,7 +989,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleOpenEditModal(item)}
                         className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Edit Pasaran"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -931,7 +997,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleDeletePasaran(item.id, item.name)}
                         className="p-1.5 bg-rose-950/80 border border-rose-500/40 text-rose-400 hover:text-rose-200 rounded-lg hover:bg-rose-900 transition-all cursor-pointer"
-                        title="Hapus Pasaran"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -964,7 +1029,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
             <form onSubmit={handleSavePasaran} className="space-y-3 text-xs font-mono-code">
               <div>
-                <label className="block text-slate-300 font-bold mb-1 uppercase">NAMA PASARAN</label>
+                <label className="block text-slate-300 font-bold mb-1">NAMA PASARAN</label>
                 <input
                   type="text"
                   required
@@ -977,7 +1042,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">SESI SHIFT</label>
+                  <label className="block text-slate-300 font-bold mb-1">SESI SHIFT</label>
                   <select
                     value={formSession}
                     onChange={(e) => setFormSession(e.target.value as any)}
@@ -988,8 +1053,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     <option value="MALAM">MALAM</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">STATUS AKSI</label>
+                  <label className="block text-slate-300 font-bold mb-1">STATUS AKSI</label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
@@ -1004,7 +1070,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">JAM TUTUP</label>
+                  <label className="block text-slate-300 font-bold mb-1">JAM TUTUP</label>
                   <input
                     type="text"
                     value={formJamTutup}
@@ -1012,8 +1078,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">JAM RESULT</label>
+                  <label className="block text-slate-300 font-bold mb-1">JAM RESULT</label>
                   <input
                     type="text"
                     value={formJamResult}
@@ -1024,10 +1091,12 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-300 font-bold uppercase">LINK LIVE DRAW (Multi-Link)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-300 font-bold">LINK LIVE DRAW (Bisa Multi-Link)</label>
+                </div>
                 <textarea
                   rows={3}
-                  placeholder={"Satu Link per baris..."}
+                  placeholder={"https://totomacau.com\nhttps://livedrawmacau.com"}
                   value={formLinkUrl}
                   onChange={(e) => setFormLinkUrl(e.target.value)}
                   className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]"
@@ -1036,7 +1105,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">PRIZE P1</label>
+                  <label className="block text-slate-300 font-bold mb-1">PRIZE P1</label>
                   <input
                     type="text"
                     value={formP1Prize}
@@ -1045,7 +1114,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">PRIZE P2</label>
+                  <label className="block text-slate-300 font-bold mb-1">PRIZE P2</label>
                   <input
                     type="text"
                     value={formP2Prize}
@@ -1054,7 +1123,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase">PRIZE P3</label>
+                  <label className="block text-slate-300 font-bold mb-1">PRIZE P3</label>
                   <input
                     type="text"
                     value={formP3Prize}
@@ -1074,7 +1143,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 rounded-xl font-black uppercase shadow-[0_0_15px_rgba(204,255,0,0.5)] font-heading"
+                  className="px-5 py-2 bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 rounded-xl font-black uppercase cursor-pointer transition-all shadow-[0_0_15px_rgba(204,255,0,0.5)] font-heading"
                 >
                   Simpan Pasaran
                 </button>
@@ -1089,15 +1158,15 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {activeAlarm && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
-            <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]">
+            <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]">
               <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
               <span>RINJANI ALARM RESULT</span>
             </div>
             <div className="space-y-3">
-              <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
+              <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
                 {activeAlarm.title || `RESULT ${activeAlarm.pasaranName}`.trim()}
               </h2>
-              <div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase">
+              <div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase drop-shadow-[0_0_12px_rgba(204,255,0,0.6)]">
                 JAM RESULT {activeAlarm.jamResult}
               </div>
             </div>
@@ -1105,7 +1174,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <button
                 type="button"
                 onClick={handleDismissAlarm}
-                className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 text-base sm:text-xl font-heading font-black px-12 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(204,255,0,0.75)] uppercase border-2 border-[#e5ff80] transition-all transform active:scale-95 cursor-pointer"
+                className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 text-base sm:text-xl font-heading font-black px-12 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(204,255,0,0.75)] transition-all transform active:scale-95 cursor-pointer uppercase tracking-wider border-2 border-[#e5ff80]"
               >
                 OK / TUTUP
               </button>
@@ -1121,22 +1190,26 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-3">
               <div className="flex items-center gap-2">
                 <AlarmClock className="w-5 h-5 text-[#ccff00]" />
-                <h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">KONFIGURASI ALARM</h3>
+                <h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">
+                  KONFIGURASI ALARM
+                </h3>
               </div>
               <button onClick={() => setShowAlarmConfigModal(false)} className="text-slate-400 hover:text-white p-1"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4 text-xs font-mono-code">
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
-                <div><div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div></div>
+                <div>
+                  <div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div>
+                </div>
                 <input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-5 h-5 accent-[#ccff00] cursor-pointer" />
               </div>
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
                 <div><div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div></div>
                 <button onClick={() => setIsMuted(!isMuted)} className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
+                   {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
                 </button>
               </div>
-              <button onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST', jamTutup: '00:00', jamResult: '00:00', session: 'SORE', title: 'ALARM BERHASIL' }); }} className="w-full bg-[#ccff00] text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all uppercase font-heading">
+              <button onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST', jamTutup: '00:00', jamResult: '00:00', session: 'SORE', title: 'TEST OK' }); }} className="w-full bg-[#ccff00] text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all uppercase tracking-wider font-heading">
                 <Play className="w-4 h-4 fill-slate-950" /><span>TEST ALARM</span>
               </button>
             </div>
@@ -1147,31 +1220,39 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {/* MODAL HASIL RESULT & SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-w-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5">
             <div className="flex items-center justify-between border-b border-[#1c223a] pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.2)]"><Sparkles className="w-5 h-5 animate-pulse" /></div>
+                <div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00]"><Sparkles className="w-5 h-5 animate-pulse" /></div>
                 <div><h3 className="text-base font-black text-[#ccff00] font-brand uppercase">HASIL RESULT &amp; SHIO</h3><p className="text-xs text-slate-400 font-medium">{popupPasaran.name}</p></div>
               </div>
-              <button onClick={() => setIsResultPopupOpen(false)} className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setIsResultPopupOpen(false)} className="p-1.5 text-slate-400 hover:text-white rounded-xl"><X className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-code">RESULT P1</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">RESULT P1</span>
                 <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</div>
               </div>
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-code">SHIO</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-2xl">{calculateShio(popupPasaran.p1Prize).emoji}</span>
-                  <span className="text-lg sm:text-xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span>
-                </div>
-              </div>
+              {(() => {
+                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-';
+                const shio = calculateShio(res);
+                return (
+                  <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-2xl">{res !== '-' ? shio.emoji : '❓'}</span>
+                      <span className="text-lg sm:text-xl font-black text-white font-heading">{res !== '-' ? shio.name : '-'}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-            <textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] rounded-xl p-3.5 text-xs text-[#ccff00] font-mono-code outline-none focus:border-[#ccff00]" />
-            <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
+            <textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code outline-none focus:border-[#ccff00]" />
+            <div className="flex items-center justify-between pt-2 gap-3">
               <button onClick={() => setIsResultPopupOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button>
-              <button onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950'}`}>{isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}</button>
+              <button onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950'}`}>
+                {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
+              </button>
             </div>
           </div>
         </div>
