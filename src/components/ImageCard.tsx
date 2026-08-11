@@ -25,7 +25,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const isCopied = copiedId === item.id;
 
-  // Tutup dropdown jika klik di luar area
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -49,7 +48,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           : 'bg-[#0f1022] border-[#1e2142] hover:border-lime-400/80 hover:shadow-[0_0_30px_rgba(163,230,53,0.35)] hover:-translate-y-1'
       }`}
     >
-      {/* Efek Garis Neon di Atas */}
       <div
         className={`absolute top-0 left-0 right-0 h-1 transition-all duration-300 ${
           item.isPinned
@@ -58,7 +56,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         }`}
       />
 
-      {/* Header: Judul & Menu */}
       <div>
         <div className="flex items-start justify-between gap-2.5 mb-2 pt-0.5">
           <div className="flex-1 pr-1 min-w-0">
@@ -93,47 +90,23 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             {showMenu && (
               <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#141629] border border-[#2d3156] rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] py-1 z-30 animate-fade-in text-xs font-bold space-y-0.5 backdrop-blur-md">
                 <button
-                  onClick={() => {
-                    onTogglePin(item.id);
-                    setShowMenu(false);
-                  }}
+                  onClick={() => { onTogglePin(item.id); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#202347] hover:text-lime-400 transition-colors text-left"
                 >
-                  {item.isPinned ? (
-                    <>
-                      <PinOff className="w-3.5 h-3.5 text-lime-400" />
-                      <span>Lepas Pin</span>
-                    </>
-                  ) : (
-                    <>
-                      <Pin className="w-3.5 h-3.5 text-lime-400" />
-                      <span>Sematkan ke Atas</span>
-                    </>
-                  )}
+                  {item.isPinned ? <><PinOff className="w-3.5 h-3.5 text-lime-400" /><span>Lepas Pin</span></> : <><Pin className="w-3.5 h-3.5 text-lime-400" /><span>Sematkan</span></>}
                 </button>
-
                 <button
-                  onClick={() => {
-                    onEdit(item);
-                    setShowMenu(false);
-                  }}
+                  onClick={() => { onEdit(item); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#202347] hover:text-lime-400 transition-colors text-left"
                 >
-                  <Edit2 className="w-3.5 h-3.5 text-lime-400" />
-                  <span>Edit Data Gambar</span>
+                  <Edit2 className="w-3.5 h-3.5 text-lime-400" /><span>Edit</span>
                 </button>
-
                 <div className="my-1 border-t border-[#222647]" />
-
                 <button
-                  onClick={() => {
-                    onDelete(item.id);
-                    setShowMenu(false);
-                  }}
+                  onClick={() => { onDelete(item.id); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors text-left"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Hapus Gambar</span>
+                  <Trash2 className="w-3.5 h-3.5" /><span>Hapus</span>
                 </button>
               </div>
             )}
@@ -141,7 +114,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         </div>
       </div>
 
-      {/* Area Gambar Utama (Tampilan Grid) */}
       <div
         onClick={() => onViewImage(item)}
         className="my-2 relative group/img cursor-pointer rounded-xl overflow-hidden bg-[#070814] border border-[#1d203f] hover:border-lime-500/60 aspect-[4/3] flex items-center justify-center transition-all shadow-inner"
@@ -150,12 +122,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           <img
             src={item.imageUrl}
             alt={item.title}
-            loading="lazy"
-            style={{ 
-              imageRendering: 'auto', 
-              WebkitFontSmoothing: 'antialiased' 
-            }}
-            className="w-full h-full object-contain p-1.5 transition-transform duration-300 group-hover/img:scale-[1.02]"
+            className="w-full h-full object-contain p-1.5 transition-transform duration-300 group-hover/img:scale-[1.03]"
+            style={{ imageRendering: 'auto' }}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 text-slate-500">
@@ -164,52 +132,31 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           </div>
         )}
 
-        {/* Overlay saat Hover */}
         <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-lime-300 backdrop-blur-[1px]">
           <Maximize2 className="w-6 h-6 stroke-[2.5] text-lime-400 animate-pulse" />
-          <span className="text-xs font-black uppercase tracking-wider bg-slate-950/80 px-2.5 py-1 rounded-lg border border-lime-400/40">
-            Klik Untuk Perbesar
-          </span>
+          <span className="text-xs font-black uppercase tracking-wider bg-slate-950/80 px-2.5 py-1 rounded-lg border border-lime-400/40">KLIK PERBESAR</span>
         </div>
       </div>
 
-      {/* Catatan Keterangan */}
       {item.ket && (
-        <p className="text-[11px] text-slate-300 line-clamp-2 mb-2 px-1 leading-snug font-sans">
-          {item.ket}
-        </p>
+        <p className="text-[11px] text-slate-300 line-clamp-2 mb-2 px-1 leading-snug font-sans">{item.ket}</p>
       )}
 
-      {/* Tombol Aksi */}
       <div className="shrink-0 pt-1 space-y-1.5">
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onViewImage(item)}
-            className="w-full flex items-center justify-center gap-1.5 font-heading font-bold text-xs py-2 px-3 rounded-xl bg-[#181a33] text-lime-300 hover:bg-[#202447] hover:text-lime-200 border border-lime-500/30 transition-all active:scale-95"
+            className="w-full flex items-center justify-center gap-1.5 font-heading font-bold text-xs py-2 px-3 rounded-xl bg-[#181a33] text-lime-300 hover:bg-[#202447] border border-lime-500/30 transition-all active:scale-95"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
-            <span>Lihat Penuh</span>
+            <Maximize2 className="w-3.5 h-3.5" /><span>Lihat Penuh</span>
           </button>
-
           <button
             onClick={() => onCopyImage(item.imageUrl || item.ket)}
             className={`w-full flex items-center justify-center gap-1.5 font-heading font-black text-xs py-2 px-3 rounded-xl shadow-md transition-all active:scale-95 ${
-              isCopied
-                ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)] ring-1 ring-emerald-300'
-                : 'bg-gradient-to-r from-lime-400 via-lime-500 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-slate-950 shadow-[0_0_12px_rgba(163,230,53,0.3)]'
+              isCopied ? 'bg-emerald-400 text-slate-950 ring-1 ring-emerald-300' : 'bg-gradient-to-r from-lime-400 via-lime-500 to-emerald-400 text-slate-950'
             }`}
           >
-            {isCopied ? (
-              <>
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>TERSALIN!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>COPY GAMBAR</span>
-              </>
-            )}
+            {isCopied ? <><Check className="w-3.5 h-3.5 stroke-[3]" /><span>TERSALIN!</span></> : <><Copy className="w-3.5 h-3.5" /><span>COPY GAMBAR</span></>}
           </button>
         </div>
       </div>
