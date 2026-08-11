@@ -236,7 +236,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const generateResultAnnouncement = (item: PasaranItem): string => {
-    // UPDATE: Tidak menggunakan fallback '2502' lagi
     const hasResult = item.p1Prize && item.p1Prize !== '-';
     const resultStr = hasResult ? item.p1Prize! : '-';
     const shioObj = calculateShio(resultStr);
@@ -421,32 +420,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
     // 4. Default: First pasaran in overall list
     return pasaranList[0];
-  };
-
-  const handleToggleResultStatus = (item: PasaranItem) => {
-    setPasaranList((prev) =>
-      prev.map((p) => {
-        if (p.id === item.id) {
-          const nextStatus = p.status === 'DONE' ? 'BELUM' : 'DONE';
-          return { ...p, status: nextStatus, isResultNow: false };
-        }
-        return p;
-      })
-    );
-    addToast(`Status ${item.name} diubah menjadi ${item.status === 'DONE' ? 'BELUM' : 'DONE / SUDAH RESULT'}.`, 'success');
-  };
-
-  const handleCycleStatus = (item: PasaranItem) => {
-    setPasaranList((prev) =>
-      prev.map((p) => {
-        if (p.id === item.id) {
-          const nextStatus =
-            p.status === 'BELUM' ? 'DONE' : p.status === 'DONE' ? 'LIBUR' : 'BELUM';
-          return { ...p, status: nextStatus, isResultNow: false };
-        }
-        return p;
-      })
-    );
   };
 
   // --- RESET SESI FUNCTION ---
@@ -711,6 +684,39 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   return (
     <div className="space-y-5 font-sans text-slate-100">
       
+      {/* STYLE UNTUK LOADER TOMBOL LINK SESUAI CSS PERMINTAAN */}
+      <style>{`
+        .link-loader {
+          display: inline-flex;
+          gap: 10px;
+          cursor: pointer;
+          background: none;
+          border: none;
+          padding: 8px;
+          transition: transform 0.2s;
+        }
+        .link-loader:active { transform: scale(0.9); }
+        .link-loader:before,
+        .link-loader:after {
+          content: "";
+          height: 18px;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          background:
+            linear-gradient(#222 0 0) top/100% 40% no-repeat,
+            radial-gradient(farthest-side,#000 95%,#0000) 50%/8px 8px no-repeat
+            #fff;
+          animation: l7 1.5s infinite alternate ease-in;
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+        @keyframes l7 {
+          0%,
+          70% {background-size:100% 40%,8px 8px}
+          85% {background-size:100% 120%,8px 8px}
+          100% {background-size:100% 40%,8px 8px}
+        }
+      `}</style>
+      
       {/* 1. TOP HEADER TOOLBAR SECTION */}
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
@@ -882,7 +888,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   }`}
                 >
                   <td className="py-2.5 px-3">
-                    {/* NEON STYLE BUTTON UNTUK SESH (TETAP TERJAGA) */}
                     <div className="relative flex items-center h-7 w-fit bg-[#0a0518] rounded-md border border-[#8b5cf6]/50 overflow-hidden shadow-[0_0_8px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all">
                       <div className="flex items-center justify-center h-full aspect-square bg-gradient-to-b from-[#8b5cf6] to-[#4c1d95] shadow-[inset_0_0_4px_rgba(255,255,255,0.4)]">
                         <Zap className="w-3 h-3 text-white fill-white/20 animate-pulse" />
@@ -897,46 +902,44 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3">
-                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN (UKURAN DIPERBESAR) */}
                     <span className="font-brand font-black italic uppercase text-[14px] tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,3px_3px_0_#4c1d95,0_0_15px_rgba(34,211,238,0.7)] group-hover:scale-110 transition-transform inline-block">
                       {item.name}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK JAM TUTUP (UKURAN DIPERBESAR) */}
                     <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
                       {item.jamTutup}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK JAM RESULT (UKURAN DIPERBESAR) */}
                     <span className="font-mono-code font-black italic text-[12px] tracking-tight text-[#e879f9] [text-shadow:1.5px_1.5px_0_#1e1b4b,0_0_10px_rgba(232,121,249,0.5)]">
                       {item.jamResult}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
+                    {/* UPDATE: LOADER ANIMASI SEBAGAI TOMBOL LINK */}
                     {(() => {
                       const urls = getUrlsFromItem(item);
                       if (urls.length === 0) {
                         return <span className="text-slate-600">-</span>;
                       }
                       return (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAllLinks(item)}
-                          className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white hover:bg-[#ccff00]/20 transition-all cursor-pointer group shadow-[0_0_10px_rgba(204,255,0,0.2)] font-heading font-bold"
-                          title={`Buka ${urls.length} Link Sekaligus:\n${urls.join('\n')}`}
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        <div className="flex items-center justify-center gap-2">
+                           <button
+                            type="button"
+                            onClick={() => handleOpenAllLinks(item)}
+                            className="link-loader"
+                            title={`Buka ${urls.length} Link Sekaligus`}
+                          />
                           {urls.length > 1 && (
-                            <span className="font-bold text-[10px] bg-[#ccff00]/20 px-1.5 py-0.5 rounded-full text-[#ccff00] border border-[#ccff00]/30 font-mono-code">
-                              {urls.length} LINK
+                            <span className="font-bold text-[9px] bg-[#ccff00]/20 px-1.5 py-0.5 rounded-full text-[#ccff00] border border-[#ccff00]/30 font-mono-code">
+                              {urls.length}
                             </span>
                           )}
-                        </button>
+                        </div>
                       );
                     })()}
                   </td>
@@ -946,21 +949,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER 3D STYLE UNTUK P1 (UKURAN DIPERBESAR) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p1Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P2 (UKURAN DIPERBESAR) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P3 (UKURAN DIPERBESAR) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p3Prize || '-'}
                     </span>
@@ -986,7 +986,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleOpenResultPopup(item)}
                         className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Hasil Result & Calculation Shio (%)"
                       >
                         <Percent className="w-3.5 h-3.5" />
                       </button>
@@ -995,7 +994,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleOpenEditModal(item)}
                         className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Edit Pasaran"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -1004,7 +1002,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                         type="button"
                         onClick={() => handleDeletePasaran(item.id, item.name)}
                         className="p-1.5 bg-rose-950/80 border border-rose-500/40 text-rose-400 hover:text-rose-200 rounded-lg hover:bg-rose-900 transition-all cursor-pointer"
-                        title="Hapus Pasaran"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1100,8 +1097,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-slate-300 font-bold">LINK LIVE DRAW / OFFICIAL (Bisa Multi-Link)</label>
-                  <span className="text-[10px] text-[#ccff00] font-bold">1 Link Per Baris</span>
+                  <label className="text-slate-300 font-bold">LINK LIVE DRAW (Bisa Multi-Link)</label>
                 </div>
                 <textarea
                   rows={3}
@@ -1117,7 +1113,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   <label className="block text-slate-300 font-bold mb-1">PRIZE P1</label>
                   <input
                     type="text"
-                    placeholder="e.g. 4647"
                     value={formP1Prize}
                     onChange={(e) => setFormP1Prize(e.target.value)}
                     className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2 text-[#ccff00] font-bold text-center outline-none"
@@ -1127,7 +1122,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   <label className="block text-slate-300 font-bold mb-1">PRIZE P2</label>
                   <input
                     type="text"
-                    placeholder="e.g. 0978"
                     value={formP2Prize}
                     onChange={(e) => setFormP2Prize(e.target.value)}
                     className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2 text-slate-200 font-bold text-center outline-none"
@@ -1137,7 +1131,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   <label className="block text-slate-300 font-bold mb-1">PRIZE P3</label>
                   <input
                     type="text"
-                    placeholder="e.g. 2015"
                     value={formP3Prize}
                     onChange={(e) => setFormP3Prize(e.target.value)}
                     className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2 text-slate-200 font-bold text-center outline-none"
@@ -1170,22 +1163,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {activeAlarm && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
-            
             <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]">
               <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
               <span>RINJANI ALARM RESULT</span>
             </div>
-
             <div className="space-y-3">
               <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
-                {activeAlarm.title || `RESULT ${activeAlarm.pasaranName} ${activeAlarm.p1Prize || ''}`.trim()}
+                {activeAlarm.title || `RESULT ${activeAlarm.pasaranName}`.trim()}
               </h2>
-              
               <div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase drop-shadow-[0_0_12px_rgba(204,255,0,0.6)]">
                 JAM RESULT {activeAlarm.jamResult}
               </div>
             </div>
-
             <div className="pt-2">
               <button
                 type="button"
@@ -1195,9 +1184,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 OK / TUTUP
               </button>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-400 font-mono-code font-bold tracking-wide">
-              Klik OK / tekan SPASI / tekan ESC untuk menghentikan alarm.
-            </p>
           </div>
         </div>
       )}
@@ -1206,7 +1192,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-md p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
-            
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-3">
               <div className="flex items-center gap-2">
                 <AlarmClock className="w-5 h-5 text-[#ccff00]" />
@@ -1214,78 +1199,25 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   KONFIGURASI ALARM
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAlarmConfigModal(false)}
-                className="text-slate-400 hover:text-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setShowAlarmConfigModal(false)} className="text-slate-400 hover:text-white p-1"><X className="w-5 h-5" /></button>
             </div>
-
             <div className="space-y-4 text-xs font-mono-code">
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
                 <div>
                   <div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div>
-                  <div className="text-slate-400 text-[10px]">Bunyikan alarm saat jam result habis</div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isAlarmEnabled}
-                  onChange={(e) => setIsAlarmEnabled(e.target.checked)}
-                  className="w-5 h-5 accent-[#ccff00] cursor-pointer"
-                />
+                <input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-5 h-5 accent-[#ccff00] cursor-pointer" />
               </div>
-
               <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
-                <div>
-                  <div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div>
-                  <div className="text-slate-400 text-[10px]">{isMuted ? 'Muted' : 'Aktif'}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 ${
-                    isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'
-                  }`}
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                  <span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
+                <div><div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div></div>
+                <button onClick={() => setIsMuted(!isMuted)} className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>
+                   {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
                 </button>
               </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAlarmConfigModal(false);
-                    triggerAlarm({
-                      pasaranName: 'TEST ALARM',
-                      jamTutup: '00:00 WIB',
-                      jamResult: '00:00 WIB',
-                      p1Prize: 'TEST',
-                      session: 'SORE',
-                      title: 'UJI COBA ALARM BERHASIL',
-                    });
-                  }}
-                  className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading"
-                >
-                  <Play className="w-4 h-4 fill-slate-950" />
-                  <span>TEST ALARM (TEST POPUP)</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end border-t border-[#ccff00]/20">
-              <button
-                type="button"
-                onClick={() => setShowAlarmConfigModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold font-heading"
-              >
-                Tutup
+              <button onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST', jamTutup: '00:00', jamResult: '00:00', session: 'SORE', title: 'TEST OK' }); }} className="w-full bg-[#ccff00] text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all uppercase tracking-wider font-heading">
+                <Play className="w-4 h-4 fill-slate-950" /><span>TEST ALARM</span>
               </button>
             </div>
-
           </div>
         </div>
       )}
@@ -1293,103 +1225,40 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {/* MODAL HASIL RESULT & SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            
+          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-w-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5">
             <div className="flex items-center justify-between border-b border-[#1c223a] pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.2)]">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-[#ccff00] font-brand tracking-wide uppercase">
-                    HASIL RESULT &amp; SHIO
-                  </h3>
-                  <p className="text-xs text-slate-400 font-medium">
-                    {popupPasaran.name}
-                  </p>
-                </div>
+                <div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00]"><Sparkles className="w-5 h-5 animate-pulse" /></div>
+                <div><h3 className="text-base font-black text-[#ccff00] font-brand uppercase">HASIL RESULT &amp; SHIO</h3><p className="text-xs text-slate-400 font-medium">{popupPasaran.name}</p></div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsResultPopupOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setIsResultPopupOpen(false)} className="p-1.5 text-slate-400 hover:text-white rounded-xl"><X className="w-5 h-5" /></button>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                  RESULT P1
-                </span>
-                {/* UPDATE: Strictly using data from the item row, no defaults */}
-                <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1 drop-shadow-[0_0_10px_rgba(204,255,0,0.4)]">
-                  {popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}
-                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">RESULT P1</span>
+                <div className="text-xl sm:text-2xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</div>
               </div>
-
               {(() => {
                 const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-';
                 const shio = calculateShio(res);
-                const hasResult = res !== '-';
-                
                 return (
                   <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5 flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">
-                      SHIO
-                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl">{hasResult ? shio.emoji : '❓'}</span>
-                      <span className="text-lg sm:text-xl font-black text-white tracking-wider font-heading">
-                        {hasResult ? shio.name : '-'}
-                      </span>
+                      <span className="text-2xl">{res !== '-' ? shio.emoji : '❓'}</span>
+                      <span className="text-lg sm:text-xl font-black text-white font-heading">{res !== '-' ? shio.name : '-'}</span>
                     </div>
                   </div>
                 );
               })()}
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-[#ccff00]" />
-                Teks Rekapan
-              </label>
-              <textarea
-                value={popupText}
-                onChange={(e) => setPopupText(e.target.value)}
-                rows={7}
-                className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#ccff00] transition-all"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
-              <button
-                type="button"
-                onClick={() => setIsResultPopupOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#131728] hover:bg-[#1f253e] border border-[#262f50] rounded-xl transition-all"
-              >
-                Tutup
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(popupText);
-                  addToast('✅ Berhasil disalin!', 'success');
-                  setIsCopied(true);
-                  setTimeout(() => setIsCopied(false), 2000);
-                }}
-                className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${
-                  isCopied
-                    ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
-                    : 'bg-[#ccff00] hover:bg-[#b8e600] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'
-                }`}
-              >
+            <textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] rounded-xl p-3.5 text-xs sm:text-sm text-[#ccff00] font-mono-code outline-none focus:border-[#ccff00]" />
+            <div className="flex items-center justify-between pt-2 gap-3">
+              <button onClick={() => setIsResultPopupOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button>
+              <button onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950'}`}>
                 {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
               </button>
             </div>
-
           </div>
         </div>
       )}
