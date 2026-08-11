@@ -43,6 +43,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-950/95 backdrop-blur-xl animate-fade-in">
+      {/* Background Click to Close */}
       <div className="absolute inset-0" onClick={onClose}></div>
       <div className="relative bg-[#101224] border border-[#272b4d] w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] z-10">
         
@@ -60,7 +61,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
             <button
               onClick={handleCopy}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                copied ? 'bg-emerald-400 text-slate-950' : 'bg-[#1a1d38] text-lime-400 border border-lime-500/40'
+                copied ? 'bg-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.5)]' : 'bg-[#1a1d38] text-lime-400 border border-lime-500/40 hover:bg-lime-400 hover:text-black active:scale-95'
               }`}
             >
               {copied ? <Check className="w-4 h-4 stroke-[3]" /> : <Copy className="w-4 h-4" />}
@@ -68,7 +69,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
             </button>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-[#1a1d38] text-slate-200 hover:text-lime-400 border border-[#2a2e54]"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-[#1a1d38] text-slate-200 hover:text-lime-400 border border-[#2a2e54] transition-all active:scale-95"
             >
               <Download className="w-4 h-4 text-lime-400" /><span className="hidden md:inline">UNDUH</span>
             </button>
