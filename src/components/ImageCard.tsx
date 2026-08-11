@@ -25,7 +25,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const isCopied = copiedId === item.id;
 
-  // Close dropdown on outside click
+  // Tutup dropdown jika klik di luar area
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -49,7 +49,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           : 'bg-[#0f1022] border-[#1e2142] hover:border-lime-400/80 hover:shadow-[0_0_30px_rgba(163,230,53,0.35)] hover:-translate-y-1'
       }`}
     >
-      {/* Top Cyber Neon Glowing Sweep Bar */}
+      {/* Efek Garis Neon di Atas */}
       <div
         className={`absolute top-0 left-0 right-0 h-1 transition-all duration-300 ${
           item.isPinned
@@ -58,7 +58,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         }`}
       />
 
-      {/* Header: Pinned Tag + Title + Category Badge + 3-dots Menu */}
+      {/* Header: Judul & Menu */}
       <div>
         <div className="flex items-start justify-between gap-2.5 mb-2 pt-0.5">
           <div className="flex-1 pr-1 min-w-0">
@@ -78,7 +78,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             </h3>
           </div>
 
-          {/* 3-Dots Action Button */}
           <div className="relative shrink-0" ref={menuRef}>
             <button
               onClick={() => setShowMenu((prev) => !prev)}
@@ -87,12 +86,10 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                   ? 'bg-lime-500/20 text-lime-400 border-lime-500/70 shadow-[0_0_12px_rgba(163,230,53,0.4)]'
                   : 'bg-[#181b36] text-slate-400 border-[#282b4c] hover:text-lime-300 hover:bg-[#20244b] hover:border-lime-400/60'
               }`}
-              title="Opsi Menu Gambar"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
 
-            {/* Dropdown Menu */}
             {showMenu && (
               <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#141629] border border-[#2d3156] rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] py-1 z-30 animate-fade-in text-xs font-bold space-y-0.5 backdrop-blur-md">
                 <button
@@ -144,7 +141,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         </div>
       </div>
 
-      {/* Main Image Display Box */}
+      {/* Area Gambar Utama (Tampilan Grid) */}
       <div
         onClick={() => onViewImage(item)}
         className="my-2 relative group/img cursor-pointer rounded-xl overflow-hidden bg-[#070814] border border-[#1d203f] hover:border-lime-500/60 aspect-[4/3] flex items-center justify-center transition-all shadow-inner"
@@ -153,7 +150,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           <img
             src={item.imageUrl}
             alt={item.title}
-            className="w-full h-full object-contain p-1.5 transition-transform duration-300 group-hover/img:scale-105"
+            loading="lazy"
+            style={{ 
+              imageRendering: 'auto', 
+              WebkitFontSmoothing: 'antialiased' 
+            }}
+            className="w-full h-full object-contain p-1.5 transition-transform duration-300 group-hover/img:scale-[1.02]"
           />
         ) : (
           <div className="flex flex-col items-center gap-2 text-slate-500">
@@ -162,8 +164,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           </div>
         )}
 
-        {/* Hover Overlay with View Icon */}
-        <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-lime-300 backdrop-blur-[2px]">
+        {/* Overlay saat Hover */}
+        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-lime-300 backdrop-blur-[1px]">
           <Maximize2 className="w-6 h-6 stroke-[2.5] text-lime-400 animate-pulse" />
           <span className="text-xs font-black uppercase tracking-wider bg-slate-950/80 px-2.5 py-1 rounded-lg border border-lime-400/40">
             Klik Untuk Perbesar
@@ -171,14 +173,14 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         </div>
       </div>
 
-      {/* Notes / Description text if present */}
+      {/* Catatan Keterangan */}
       {item.ket && (
         <p className="text-[11px] text-slate-300 line-clamp-2 mb-2 px-1 leading-snug font-sans">
           {item.ket}
         </p>
       )}
 
-      {/* Action Buttons: LIHAT GAMBAR & COPY GAMBAR */}
+      {/* Tombol Aksi */}
       <div className="shrink-0 pt-1 space-y-1.5">
         <div className="grid grid-cols-2 gap-2">
           <button
