@@ -127,13 +127,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setActiveAlarm(null);
   };
 
-  const triggerAlarm = (alarmData: AlarmItem) => {
-    setActiveAlarm(alarmData);
-    if (!isMuted) {
-      startAlarmSound();
-    }
-  };
-
   // Keyboard shortcut listener for SPACE or ESC to close alarm
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -287,9 +280,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setEditItem(null);
     setFormName('');
     setFormSession('SORE');
-    setFormJamTutup(''); // DIBUAT KOSONG TOTAL
-    setFormJamResult(''); // DIBUAT KOSONG TOTAL
-    setFormLinkUrl('');   // DIBUAT KOSONG TOTAL
+    setFormJamTutup(''); // TETAP KOSONG
+    setFormJamResult(''); // TETAP KOSONG
+    setFormLinkUrl('');   // TETAP KOSONG
     setFormP1Prize('-');
     setFormP2Prize('-');
     setFormP3Prize('-');
@@ -340,7 +333,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             : p
         )
       );
-      addToast(`Pasaran ${formName.toUpperCase()} berhasil diperbarui.`, 'success');
+      addToast(`Pasaran ${formName.toUpperCase()} diperbarui.`, 'success');
     } else {
       const newItem: PasaranItem = {
         id: `p-${Date.now()}`,
@@ -356,35 +349,78 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         isResultNow: formIsResultNow,
       };
       setPasaranList((prev) => [newItem, ...prev]);
-      addToast(`Pasaran ${formName.toUpperCase()} berhasil ditambahkan.`, 'success');
+      addToast(`Pasaran ${formName.toUpperCase()} ditambahkan.`, 'success');
     }
 
     setIsModalOpen(false);
   };
 
   const handleDeletePasaran = (id: string, name: string) => {
-    setPasaranList((prev) => prev.filter((p) => p.id !== id));
-    addToast(`Pasaran ${name} telah dihapus.`, 'info');
+    if (window.confirm(`Hapus pasaran ${name}?`)) {
+      setPasaranList((prev) => prev.filter((p) => p.id !== id));
+      addToast(`Pasaran ${name} telah dihapus.`, 'info');
+    }
   };
 
+  const isJamPassed = (jamTutupStr: string): boolean => {
+    const match = jamTutupStr.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return false;
+    const h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const now = new Date();
+    const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const tutupSecs = h * 3600 + m * 60;
+    return nowSecs >= tutupSecs;
+  };
+
+  const findTargetPasaran = (inputStr: string): PasaranItem | undefined => {
+    if (!pasaranList || pasaranList.length === 0) return undefined;
+    const sortedPasaran = [...pasaranList].sort((a, b) => b.name.length - a.name.length);
+    
+    let matched = sortedPasaran.find((p) => inputStr.includes(p.name.toUpperCase()));
+    if (!matched) {
+      matched = sortedPasaran.find((p) => {
+        const parts = p.name.toUpperCase().split(' ');
+        return parts.every((part) => inputStr.includes(part));
+      });
+    }
+    if (matched) return matched;
+
+    const resultNowItem = pasaranList.find((p) => p.isResultNow || (p.status === 'BELUM' && isJamPassed(p.jamTutup)));
+    if (resultNowItem) return resultNowItem;
+
+    const activeSessionPasaran = pasaranList.find((p) => {
+      if (selectedSession !== 'ALL PASARAN' && selectedSession !== 'SEMUA' && p.session !== selectedSession) {
+        return false;
+      }
+      return p.status === 'BELUM';
+    });
+    if (activeSessionPasaran) return activeSessionPasaran;
+
+    return pasaranList[0];
+  };
+
+  // --- RESET SESI FUNCTION ---
   const handleResetSession = () => {
-    const sessionLabel = selectedSession === 'ALL PASARAN' ? 'ALL PASARAN' : `SESI ${selectedSession}`;
-    setPasaranList((prev) =>
-      prev.map((item) => {
-        if (selectedSession === 'ALL PASARAN' || item.session === selectedSession) {
-          return {
-            ...item,
-            p1Prize: '-',
-            p2Prize: '-',
-            p3Prize: '-',
-            status: 'BELUM',
-            isResultNow: false,
-          };
-        }
-        return item;
-      })
-    );
-    addToast(`🔄 Status & Result untuk ${sessionLabel} berhasil di-reset!`, 'success');
+    const sessionLabel = selectedSession === 'ALL PASARAN' || selectedSession === 'SEMUA' ? 'ALL PASARAN' : `SESI ${selectedSession}`;
+    if (window.confirm(`Reset semua Angka P1-P3 dan Status untuk ${sessionLabel}?`)) {
+      setPasaranList((prev) =>
+        prev.map((item) => {
+          if (selectedSession === 'ALL PASARAN' || selectedSession === 'SEMUA' || item.session === selectedSession) {
+            return {
+              ...item,
+              p1Prize: '-',
+              p2Prize: '-',
+              p3Prize: '-',
+              status: 'BELUM',
+              isResultNow: false,
+            };
+          }
+          return item;
+        })
+      );
+      addToast(`🔄 Status & Result untuk ${sessionLabel} di-reset!`, 'success');
+    }
   };
 
   const getUrlsFromItem = (item: PasaranItem): string[] => {
@@ -401,11 +437,56 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     });
   };
 
+  const triggerAlarm = (alarmData: AlarmItem) => {
+    setActiveAlarm(alarmData);
+    if (!isMuted) startAlarmSound();
+  };
+
   const renderResultStatusBadge = (item: PasaranItem) => {
-    if (item.status === 'DONE') return <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">SUDAH RESULT</div>;
-    if (item.status === 'LIBUR') return <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full bg-amber-950/40 text-amber-300/80 border border-amber-500/30">PASARAN LIBUR</div>;
-    
-    return <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full bg-cyan-950/40 text-cyan-400 border border-cyan-500/30">BELUM RESULT</div>;
+    if (item.status === 'DONE') {
+      return (
+        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
+          SUDAH RESULT
+        </div>
+      );
+    }
+    if (item.status === 'LIBUR') {
+      return (
+        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full uppercase bg-amber-950/40 text-amber-300/80 border border-amber-500/30">
+          PASARAN LIBUR
+        </div>
+      );
+    }
+    const matchTutup = item.jamTutup.match(/(\d{1,2}):(\d{2})/);
+    if (!matchTutup) return <div className="text-[10px] text-slate-500">BELUM RESULT</div>;
+
+    const hoursTutup = parseInt(matchTutup[1], 10);
+    const minsTutup = parseInt(matchTutup[2], 10);
+    const nowHours = currentTime.getHours();
+    const nowMins = currentTime.getMinutes();
+    const nowSecs = currentTime.getSeconds();
+    const nowTotalSecs = nowHours * 3600 + nowMins * 60 + nowSecs;
+    const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
+    let diffSecs = tutupTotalSecs - nowTotalSecs;
+
+    if (diffSecs > 0) {
+      const h = Math.floor(diffSecs / 3600);
+      const m = Math.floor((diffSecs % 3600) / 60);
+      const s = diffSecs % 60;
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const countdownStr = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+      return (
+        <div className="inline-block font-mono-code font-black text-[10px] px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-400/60">
+          ⏳ TUTUP: {countdownStr}
+        </div>
+      );
+    } else {
+      return (
+        <div className="inline-block font-black text-[10px] px-3 py-1 rounded-full uppercase bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/60 animate-pulse">
+          RESULT NOW!
+        </div>
+      );
+    }
   };
 
   const handleProcessResultStatusInput = (e: React.FormEvent) => {
@@ -413,15 +494,14 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     if (!resultStatusInput.trim()) return;
     const rawStr = resultStatusInput.trim().toUpperCase();
     const matchedItem = findTargetPasaran(rawStr);
-    if (!matchedItem) return;
-
+    if (!matchedItem) {
+      addToast(`Pasaran tidak ditemukan.`, 'error');
+      return;
+    }
     const numbers = rawStr.match(/\d+/g) || [];
     const p1Val = numbers.length > 0 ? numbers[0] : null;
-
     setPasaranList((prev) =>
-      prev.map((item) =>
-        item.id === matchedItem.id ? { ...item, ...(p1Val ? { p1Prize: p1Val } : {}), status: 'DONE', isResultNow: false } : item
-      )
+      prev.map((item) => item.id === matchedItem.id ? { ...item, ...(p1Val ? { p1Prize: p1Val } : {}), status: 'DONE', isResultNow: false } : item)
     );
     addToast(`✅ Status ${matchedItem.name} berhasil diubah ke DONE!`, 'success');
     setResultStatusInput('');
@@ -432,16 +512,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     if (!p1TerminalInput.trim()) return;
     const rawStr = p1TerminalInput.trim().toUpperCase();
     const matchedItem = findTargetPasaran(rawStr);
-    if (!matchedItem) return;
-
+    if (!matchedItem) {
+      addToast(`Pasaran tidak ditemukan.`, 'error');
+      return;
+    }
     const numbers = rawStr.match(/\d+/g) || [];
     if (numbers.length === 0) return;
-    const p1Value = numbers[0];
-
     setPasaranList((prev) =>
-      prev.map((item) => item.id === matchedItem.id ? { ...item, p1Prize: p1Value } : item)
+      prev.map((item) => item.id === matchedItem.id ? { ...item, p1Prize: numbers[0] } : item)
     );
-    addToast(`✅ Result P1 ${matchedItem.name} (${p1Value}) berhasil di-input!`, 'success');
+    addToast(`✅ Result P1 ${matchedItem.name} (${numbers[0]}) berhasil di-input!`, 'success');
     setP1TerminalInput('');
   };
 
@@ -450,11 +530,12 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     if (!p123TerminalInput.trim()) return;
     let cleanStr = p123TerminalInput.trim().toUpperCase().replace(/PRIZE\s*[123]:?/gi, ' ').replace(/P[123]:?/gi, ' ');
     const matchedItem = findTargetPasaran(cleanStr);
-    if (!matchedItem) return;
-
+    if (!matchedItem) {
+      addToast(`Pasaran tidak ditemukan.`, 'error');
+      return;
+    }
     const numbers = cleanStr.match(/\d+/g) || [];
     if (numbers.length === 0) return;
-
     setPasaranList((prev) =>
       prev.map((item) =>
         item.id === matchedItem.id ? { ...item, p1Prize: numbers[0] || '-', p2Prize: numbers[1] || '-', p3Prize: numbers[2] || '-' } : item
@@ -478,34 +559,27 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 onChange={(e) => setSelectedSession(e.target.value)}
                 className="bg-transparent outline-none cursor-pointer font-mono-code font-extrabold text-[#ccff00] uppercase"
               >
-                <option value="SORE" className="bg-[#121325]">SESI SORE</option>
-                <option value="PAGI" className="bg-[#121325]">SESI PAGI</option>
-                <option value="MALAM" className="bg-[#121325]">SESI MALAM</option>
-                <option value="ALL PASARAN" className="bg-[#121325]">ALL PASARAN</option>
+                <option value="SORE">SESI SORE</option>
+                <option value="PAGI">SESI PAGI</option>
+                <option value="MALAM">SESI MALAM</option>
+                <option value="ALL PASARAN">ALL PASARAN</option>
               </select>
             </div>
 
-            <button
-              onClick={() => setIsMuted(!isMuted)}
-              className="p-2 bg-[#181a2c] border-2 border-[#ccff00]/50 text-[#ccff00] hover:text-white rounded-2xl transition-all cursor-pointer"
-            >
+            <button onClick={() => setIsMuted(!isMuted)} className="p-2 bg-[#181a2c] border-2 border-[#ccff00]/50 text-[#ccff00] hover:text-white rounded-2xl transition-all cursor-pointer">
               {isMuted ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-[#ccff00]" />}
             </button>
 
-            <button
-              onClick={handleOpenAddModal}
-              className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-[0_0_20px_rgba(204,255,0,0.5)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider font-heading"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>ADD PASARAN</span>
+            <button onClick={() => setShowAlarmConfigModal(true)} className="bg-rose-600 hover:bg-rose-500 text-white font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-lg active:scale-95 uppercase tracking-wider font-heading">
+              <Bell className="w-4 h-4" /> <span>ALARM CFG</span>
             </button>
 
-            <button
-              onClick={handleResetSession}
-              className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-[0_0_18px_rgba(245,158,11,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider border border-amber-300/80 font-heading"
-            >
-              <RotateCcw className="w-4 h-4 stroke-[2.5]" />
-              <span>RESET SESI</span>
+            <button onClick={handleOpenAddModal} className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-lg active:scale-95 uppercase tracking-wider font-heading">
+              <Plus className="w-4 h-4 stroke-[3]" /> <span>ADD PASARAN</span>
+            </button>
+
+            <button onClick={handleResetSession} className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black px-3.5 py-2 rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 shadow-lg active:scale-95 uppercase tracking-wider border border-amber-300/80 font-heading">
+              <RotateCcw className="w-4 h-4 stroke-[2.5]" /> <span>RESET SESI</span>
             </button>
           </div>
 
@@ -522,54 +596,27 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
 
         <div className="relative w-full lg:w-[480px] xl:w-[520px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-2.5 pt-4 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-2">
-          <div className="absolute -top-3 left-4 bg-[#ccff00] text-slate-950 font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg uppercase tracking-wider shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80]">
+          <div className="absolute -top-3 left-4 bg-[#ccff00] text-slate-950 font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg uppercase shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80]">
             TERMINAL PRIZE
           </div>
-
           <div className="flex flex-col gap-2">
             <form onSubmit={handleProcessResultStatusInput} className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="CROSSCHECK CATATAN LOG / RESULT STATUS"
-                value={resultStatusInput}
-                onChange={(e) => setResultStatusInput(e.target.value)}
-                className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/50 focus:border-[#ccff00]"
-              />
-              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_12px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading">
-                <span>DONE</span>
-              </button>
+              <input type="text" placeholder="CROSSCHECK CATATAN LOG / RESULT STATUS" value={resultStatusInput} onChange={(e) => setResultStatusInput(e.target.value)} className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/50 focus:border-[#ccff00]" />
+              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl active:scale-95 uppercase tracking-wider shrink-0 font-heading">DONE</button>
             </form>
-
             <form onSubmit={handleProcessP1Terminal} className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="P1 (e.g. TOTOMACAU SORE 5244)"
-                value={p1TerminalInput}
-                onChange={(e) => setP1TerminalInput(e.target.value)}
-                className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/40 focus:border-[#ccff00]"
-              />
-              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading">
-                <span>P1</span>
-              </button>
+              <input type="text" placeholder="P1 (e.g. TOTOMACAU SORE 5244)" value={p1TerminalInput} onChange={(e) => setP1TerminalInput(e.target.value)} className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/40 focus:border-[#ccff00]" />
+              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-9 rounded-xl active:scale-95 uppercase tracking-wider shrink-0 font-heading">P1</button>
             </form>
-
             <form onSubmit={handleProcessP123Terminal} className="flex items-center gap-2">
-              <textarea
-                rows={2}
-                placeholder={`P123 (e.g. HUAHIN1630\nPRIZE 1 : 0574\nPRIZE 2 : 5597\nPRIZE 3 : 6047)`}
-                value={p123TerminalInput}
-                onChange={(e) => setP123TerminalInput(e.target.value)}
-                className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 p-2 rounded-xl border border-[#ccff00]/40 focus:border-[#ccff00] resize-none h-14 leading-tight"
-              />
-              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-3.5 h-14 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading">
-                <span>P123</span>
-              </button>
+              <textarea rows={2} placeholder={`P123 (e.g. HUAHIN1630\nPRIZE 1 : 0574\nPRIZE 2 : 5597\nPRIZE 3 : 6047)`} value={p123TerminalInput} onChange={(e) => setP123TerminalInput(e.target.value)} className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 p-2 rounded-xl border border-[#ccff00]/40 focus:border-[#ccff00] resize-none h-14" />
+              <button type="submit" className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-3.5 h-14 rounded-xl active:scale-95 uppercase tracking-wider shrink-0 font-heading">P123</button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* 2. MAIN PASARAN RESULT LIST TABLE CONTAINER */}
+      {/* 2. TABLE CONTAINER */}
       <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-320px)] min-h-[350px] overflow-y-auto custom-scrollbar">
         <table className="w-full text-left border-collapse min-w-[900px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
@@ -581,34 +628,36 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <th className="py-3 px-3 text-center">LINK</th>
               <th className="py-3 px-3 text-center">RESULT STATUS</th>
               <th className="py-3 px-3 text-center">P1</th>
+              <th className="py-3 px-3 text-center">P2</th>
+              <th className="py-3 px-3 text-center">P3</th>
               <th className="py-3 px-3 text-center">STATUS</th>
               <th className="py-3 px-3 text-right">OPSI</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ccff00]/10 text-xs font-mono-code">
             {filteredList.map((item) => (
-              <tr key={item.id} className="hover:bg-[#ccff00]/5 transition-all group">
-                <td className="py-2.5 px-3 uppercase">{item.session}</td>
-                <td className="py-2.5 px-3 font-heading font-black text-[#ccff00] tracking-wide">{item.name}</td>
+              <tr key={item.id} className={`hover:bg-[#ccff00]/5 transition-all group ${item.status === 'DONE' ? 'bg-[#ccff00]/10' : ''}`}>
+                <td className="py-2.5 px-3 uppercase text-[#ccff00]">{item.session}</td>
+                <td className="py-2.5 px-3 font-heading font-black text-[#ccff00] uppercase text-xs">{item.name}</td>
                 <td className="py-2.5 px-3 text-center text-slate-300">{item.jamTutup}</td>
                 <td className="py-2.5 px-3 text-center text-slate-300">{item.jamResult}</td>
                 <td className="py-2.5 px-3 text-center">
-                  <button onClick={() => handleOpenAllLinks(item)} className="inline-flex items-center justify-center p-1.5 rounded-lg bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white transition-all cursor-pointer">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
+                  <button onClick={() => handleOpenAllLinks(item)} className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg transition-all cursor-pointer shadow-sm"><ExternalLink className="w-3.5 h-3.5" /></button>
                 </td>
                 <td className="py-2.5 px-3 text-center">{renderResultStatusBadge(item)}</td>
-                <td className="py-2.5 px-3 text-center font-black text-[#ccff00] tracking-widest">{item.p1Prize || '-'}</td>
+                <td className="py-2.5 px-3 text-center font-black text-[#ccff00] tracking-widest text-sm">{item.p1Prize || '-'}</td>
+                <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest">{item.p2Prize || '-'}</td>
+                <td className="py-2.5 px-3 text-center font-black text-slate-300 tracking-widest">{item.p3Prize || '-'}</td>
                 <td className="py-2.5 px-3 text-center">
-                  <div className={`inline-block font-black text-[10px] px-3 py-1 rounded-xl uppercase ${item.status === 'DONE' ? 'bg-[#ccff00] text-slate-950' : 'bg-rose-600 text-white'}`}>
+                  <div className={`inline-block font-black text-[10px] px-3 py-1 rounded-xl uppercase ${item.status === 'BELUM' ? 'bg-rose-600 text-white' : item.status === 'DONE' ? 'bg-[#ccff00] text-slate-950' : 'bg-amber-500/30 text-amber-300'}`}>
                     {item.status}
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <button onClick={() => handleOpenResultPopup(item)} className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] rounded-lg cursor-pointer"><Percent className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => handleOpenEditModal(item)} className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] rounded-lg cursor-pointer"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => handleDeletePasaran(item.id, item.name)} className="p-1.5 bg-rose-950/80 border border-rose-500/40 text-rose-400 rounded-lg cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleOpenResultPopup(item)} className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg cursor-pointer"><Percent className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleOpenEditModal(item)} className="p-1.5 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg cursor-pointer"><Edit2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDeletePasaran(item.id, item.name)} className="p-1.5 bg-rose-950/80 border border-rose-500/40 text-rose-400 hover:text-rose-200 rounded-lg cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -617,114 +666,129 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </table>
       </div>
 
-      {/* 4. MODAL FOR ADDING / EDITING PASARAN */}
+      {/* 3. MODALS (ADD/EDIT, ALARM CFG, RESULT/SHIO) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-lg p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
-            
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-3xl w-full max-lg p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-3">
-              <h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">
-                {editItem ? `EDIT PASARAN - ${editItem.name}` : 'TAMBAH PASARAN BARU'}
-              </h3>
+              <h3 className="text-lg font-black text-[#ccff00] font-brand uppercase">{editItem ? `EDIT PASARAN - ${editItem.name}` : 'TAMBAH PASARAN BARU'}</h3>
               <button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-lg font-bold">✕</button>
             </div>
-
             <form onSubmit={handleSavePasaran} className="space-y-3 text-xs font-mono-code">
               <div>
-                <label className="block text-slate-300 font-bold mb-1">NAMA PASARAN</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: TOTOMACAU SORE"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none focus:border-[#ccff00]"
-                />
+                <label className="block text-slate-300 font-bold mb-1 uppercase">Nama Pasaran</label>
+                <input type="text" required placeholder="Contoh: TOTOMACAU SORE" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none" />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">SESI SHIFT</label>
+                  <label className="block text-slate-300 font-bold mb-1 uppercase">Sesi</label>
                   <select value={formSession} onChange={(e) => setFormSession(e.target.value as any)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none">
-                    <option value="SORE">SORE</option>
-                    <option value="PAGI">PAGI</option>
-                    <option value="MALAM">MALAM</option>
+                    <option value="SORE">SORE</option><option value="PAGI">PAGI</option><option value="MALAM">MALAM</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">STATUS AKSI</label>
+                  <label className="block text-slate-300 font-bold mb-1 uppercase">Status</label>
                   <select value={formStatus} onChange={(e) => setFormStatus(e.target.value as any)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none">
-                    <option value="BELUM">BELUM</option>
-                    <option value="DONE">DONE</option>
-                    <option value="LIBUR">LIBUR</option>
+                    <option value="BELUM">BELUM</option><option value="DONE">DONE</option><option value="LIBUR">LIBUR</option>
                   </select>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">JAM TUTUP</label>
-                  <input
-                    type="text"
-                    value={formJamTutup}
-                    onChange={(e) => setFormJamTutup(e.target.value)}
-                    placeholder="Contoh: 15:00 WIB"
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none"
-                  />
+                  <label className="block text-slate-300 font-bold mb-1 uppercase">Jam Tutup</label>
+                  <input type="text" value={formJamTutup} onChange={(e) => setFormJamTutup(e.target.value)} placeholder="Contoh: 15:00 WIB" className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">JAM RESULT</label>
-                  <input
-                    type="text"
-                    value={formJamResult}
-                    onChange={(e) => setFormJamResult(e.target.value)}
-                    placeholder="Contoh: 16:15 WIB"
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] font-bold outline-none"
-                  />
+                  <label className="block text-slate-300 font-bold mb-1 uppercase">Jam Result</label>
+                  <input type="text" value={formJamResult} onChange={(e) => setFormJamResult(e.target.value)} placeholder="Contoh: 16:15 WIB" className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none" />
                 </div>
               </div>
-
               <div>
-                <label className="block text-slate-300 font-bold mb-1">LINK LIVE DRAW (Multi-Link)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Masukkan Link Live Draw (Pisahkan baris baru per link)"
-                  value={formLinkUrl}
-                  onChange={(e) => setFormLinkUrl(e.target.value)}
-                  className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]"
-                />
+                <label className="block text-slate-300 font-bold mb-1 uppercase">Link Live Draw (Multi-Link)</label>
+                <textarea rows={2} value={formLinkUrl} onChange={(e) => setFormLinkUrl(e.target.value)} placeholder="Masukkan Link (Pisahkan baris baru per link)" className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-3 py-2 text-[#ccff00] outline-none resize-none" />
               </div>
-
               <div className="grid grid-cols-3 gap-2">
-                <div><label className="block text-slate-300 font-bold mb-1">PRIZE P1</label><input type="text" value={formP1Prize} onChange={(e) => setFormP1Prize(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2 text-[#ccff00] font-bold text-center outline-none" /></div>
-                <div><label className="block text-slate-300 font-bold mb-1">PRIZE P2</label><input type="text" value={formP2Prize} onChange={(e) => setFormP2Prize(e.target.value)} className="w-full bg-[#141b2d] border-slate-700 rounded-xl px-2 py-2 text-slate-200 font-bold text-center outline-none" /></div>
-                <div><label className="block text-slate-300 font-bold mb-1">PRIZE P3</label><input type="text" value={formP3Prize} onChange={(e) => setFormP3Prize(e.target.value)} className="w-full bg-[#141b2d] border-slate-700 rounded-xl px-2 py-2 text-slate-200 font-bold text-center outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1 uppercase text-[10px]">Prize 1</label><input type="text" value={formP1Prize} onChange={(e) => setFormP1Prize(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2 text-center text-[#ccff00] font-bold outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1 uppercase text-[10px]">Prize 2</label><input type="text" value={formP2Prize} onChange={(e) => setFormP2Prize(e.target.value)} className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2 text-center text-slate-300 outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1 uppercase text-[10px]">Prize 3</label><input type="text" value={formP3Prize} onChange={(e) => setFormP3Prize(e.target.value)} className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2 text-center text-slate-300 outline-none" /></div>
               </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#ccff00]/30">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer font-heading">Batal</button>
-                <button type="submit" className="px-5 py-2 bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 rounded-xl font-black uppercase cursor-pointer transition-all shadow-[0_0_15px_rgba(204,255,0,0.5)] font-heading">Simpan Pasaran</button>
+              <div className="pt-2 flex justify-end gap-2 border-t border-[#ccff00]/30">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer font-heading uppercase text-[10px]">Batal</button>
+                <button type="submit" className="px-6 py-2 bg-[#ccff00] text-slate-950 rounded-xl font-black shadow-lg shadow-lime-900/40 uppercase text-[10px]">Simpan Pasaran</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ACTIVE ALARM POPUP */}
+      {showAlarmConfigModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-md p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-3">
+              <div className="flex items-center gap-2"><AlarmClock className="w-5 h-5 text-[#ccff00]" /><h3 className="text-base font-black text-[#ccff00] font-brand uppercase">KONFIG ALARM</h3></div>
+              <button type="button" onClick={() => setShowAlarmConfigModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4 text-xs font-mono-code">
+              <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
+                <div><div className="text-white font-bold text-xs uppercase">Otomatis Alarm</div><div className="text-slate-400 text-[10px]">Bunyikan saat jam result habis</div></div>
+                <input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-5 h-5 accent-[#ccff00] cursor-pointer" />
+              </div>
+              <div className="flex items-center justify-between bg-[#121624] p-3 rounded-xl border border-[#ccff00]/30">
+                <div><div className="text-white font-bold text-xs uppercase">Suara Sirine</div><div className="text-slate-400 text-[10px]">{isMuted ? 'Muted' : 'Aktif'}</div></div>
+                <button type="button" onClick={() => setIsMuted(!isMuted)} className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />} <span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
+                </button>
+              </div>
+              <button type="button" onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'UJI COBA', jamTutup: '00:00', jamResult: '00:00', session: 'SORE', title: 'TES ALARM BERHASIL' }); }} className="w-full bg-[#ccff00] text-slate-950 font-black py-3 rounded-xl shadow-lg uppercase font-heading text-[11px]">UJI COBA ALARM (POPUP)</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isResultPopupOpen && popupPasaran && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-w-lg p-6 space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#1c223a] pb-3.5">
+              <div className="flex items-center gap-2.5"><div className="p-2 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00]"><Sparkles className="w-5 h-5 animate-pulse" /></div><div><h3 className="text-base font-black text-[#ccff00] font-brand uppercase">HASIL RESULT &amp; SHIO</h3><p className="text-xs text-slate-400">{popupPasaran.name}</p></div></div>
+              <button onClick={() => setIsResultPopupOpen(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-code block">RESULT P1</span>
+                <div className="text-2xl font-black text-[#ccff00] font-mono-code mt-1">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '----'}</div>
+              </div>
+              {(() => {
+                const res = popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '2502';
+                const shio = calculateShio(res);
+                return (
+                  <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-3.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono-code block">SHIO (%)</span>
+                    <div className="flex items-center gap-2 mt-1"><span className="text-2xl">{shio.emoji}</span><span className="text-lg font-black text-white font-heading uppercase">{shio.name}</span></div>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-[#ccff00]" /> Teks Rekapan (Siap Copy)</label>
+              <textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-3 text-xs sm:text-sm text-[#ccff00] font-mono-code leading-relaxed outline-none" />
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-[#1c223a] gap-3">
+              <button onClick={() => setIsResultPopupOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button>
+              <button onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl shadow-md transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] hover:bg-[#b8e600] text-slate-950'}`}>
+                {isCopied ? <><Check className="w-4 h-4" /> Tersalin!</> : <><Copy className="w-4 h-4" /> Salin Teks</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeAlarm && (
-        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
-            <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00]">
-              <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
-              <span>RINJANI ALARM RESULT</span>
-            </div>
-            <div className="space-y-3">
-              <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight">{activeAlarm.title}</h2>
-              <div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase">JAM RESULT {activeAlarm.jamResult}</div>
-            </div>
-            <div className="pt-2">
-              <button onClick={handleDismissAlarm} className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 text-base sm:text-xl font-heading font-black px-12 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(204,255,0,0.75)] transition-all transform active:scale-95 cursor-pointer uppercase">OK / TUTUP</button>
-            </div>
+            <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]"><span className="text-xl animate-bounce">⏰</span><span>RINJANI ALARM RESULT</span></div>
+            <div className="space-y-3"><h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">{activeAlarm.title || `RESULT ${activeAlarm.pasaranName}`}</h2><div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase">JAM RESULT {activeAlarm.jamResult}</div></div>
+            <button onClick={handleDismissAlarm} className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 text-base sm:text-xl font-heading font-black px-12 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(204,255,0,0.75)] transition-all transform active:scale-95 cursor-pointer uppercase border-2 border-[#e5ff80]">OK / TUTUP</button>
+            <p className="text-[11px] text-slate-400 font-mono-code font-bold">Tekan SPASI atau ESC untuk menutup alarm.</p>
           </div>
         </div>
       )}
