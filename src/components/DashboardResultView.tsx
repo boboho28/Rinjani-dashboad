@@ -659,11 +659,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setP123TerminalInput('');
   };
 
-  // Helper function to render fire letters with various sizes
-  const renderFireLetters = (text: string, options: { size?: string, spacing?: string, cursiveOnly?: boolean } = {}) => {
-    const { size = "2.2em", spacing = "mx-2", cursiveOnly = false } = options;
+  // Helper function to render fire letters ONLY for the Title
+  const renderFireLetters = (text: string, size: string = "2.4em") => {
     return text.split('').map((char, index) => {
-      if (char === ' ') return <span key={index} className={spacing}></span>;
+      if (char === ' ') return <span key={index} className="mx-2"></span>;
       const animationClass = index % 2 === 0 ? 'fire' : 'burn';
       return (
         <span 
@@ -802,10 +801,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1">
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-2 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
-               <div className="fire-title-container">
-                {renderFireLetters(selectedSession === "ALL PASARAN" ? "ALL PASARAN" : `SESI ${selectedSession}`, { size: "1em", spacing: "mx-1" })}
-              </div>
+            <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
+              <span className="font-mono-code font-black text-xs uppercase tracking-wider">{selectedSession === "ALL PASARAN" ? "ALL PASARAN" : `SESI ${selectedSession}`}</span>
               <select
                 value={selectedSession}
                 onChange={(e) => setSelectedSession(e.target.value)}
@@ -833,34 +830,28 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             <button
               type="button"
               onClick={() => setShowAlarmConfigModal(true)}
-              className="bg-rose-600 hover:bg-rose-500 text-white font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_15px_rgba(225,29,72,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider font-heading"
+              className="bg-rose-600 hover:bg-rose-500 text-white font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_15px_rgba(225,29,72,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider font-heading text-xs"
             >
               <Bell className="w-4 h-4" />
-              <div className="fire-title-container">
-                {renderFireLetters("ALARM CFG", { size: "1.1em", spacing: "mx-1" })}
-              </div>
+              <span>ALARM CFG</span>
             </button>
 
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(204,255,0,0.5)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider font-heading"
+              className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(204,255,0,0.5)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider font-heading text-xs"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <div className="fire-title-container">
-                {renderFireLetters("ADD PASARAN", { size: "1.1em", spacing: "mx-1" })}
-              </div>
+              <span>ADD PASARAN</span>
             </button>
 
             <button
               type="button"
               onClick={handleResetSession}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_18px_rgba(245,158,11,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider border border-amber-300/80 font-heading"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black px-5 py-2.5 rounded-full flex items-center gap-2 shadow-[0_0_18px_rgba(245,158,11,0.6)] cursor-pointer transition-all active:scale-95 uppercase tracking-wider border border-amber-300/80 font-heading text-xs"
             >
               <RotateCcw className="w-4 h-4 stroke-[2.5]" />
-              <div className="fire-title-container">
-                {renderFireLetters("RESET SESI", { size: "1.1em", spacing: "mx-1" })}
-              </div>
+              <span>RESET SESI</span>
             </button>
           </div>
 
@@ -870,21 +861,19 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
             <div className="flex flex-col">
               <div className="fire-title-container">
-                {renderFireLetters("SHORTCUT RESULT", { size: "2.4em", spacing: "mx-2" })}
+                {renderFireLetters("SHORTCUT RESULT")}
               </div>
-              <div className="fire-title-container -mt-1.5">
-                {renderFireLetters("PANEL OTOMATISASI RESULT PASARAN TOGEL", { size: "1.05em", spacing: "mx-1" })}
-              </div>
+              <p className="text-[10px] font-mono-code text-white/70 font-bold tracking-[0.2em] uppercase mt-0.5">
+                PANEL OTOMATISASI RESULT PASARAN TOGEL
+              </p>
             </div>
           </div>
 
         </div>
 
         <div className="relative w-full lg:w-[480px] xl:w-[520px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-3 pt-5 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-3">
-          <div className="absolute -top-4 left-4 bg-[#ccff00] text-slate-950 px-4 py-1 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80]">
-            <div className="fire-title-container">
-              {renderFireLetters("TERMINAL PRIZE", { size: "0.95em", spacing: "mx-1" })}
-            </div>
+          <div className="absolute -top-4 left-4 bg-[#ccff00] text-slate-950 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80] text-[10px] font-black tracking-widest uppercase">
+            TERMINAL PRIZE
           </div>
 
           <div className="flex flex-col gap-2.5">
@@ -900,9 +889,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-10 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_12px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
               >
-                <div className="fire-title-container">
-                  {renderFireLetters("DONE", { size: "1.1em", spacing: "mx-0.5" })}
-                </div>
+                <span>DONE</span>
               </button>
             </form>
 
@@ -918,9 +905,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-10 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
               >
-                <div className="fire-title-container">
-                  {renderFireLetters("P1", { size: "1.1em", spacing: "mx-0.5" })}
-                </div>
+                <span>P1</span>
               </button>
             </form>
 
@@ -936,9 +921,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 type="submit"
                 className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black text-xs px-4 h-16 rounded-xl flex items-center justify-center cursor-pointer shadow-[0_0_14px_rgba(204,255,0,0.5)] transition-all active:scale-95 uppercase tracking-wider shrink-0 font-heading"
               >
-                <div className="fire-title-container">
-                  {renderFireLetters("P123", { size: "1.1em", spacing: "mx-0.5" })}
-                </div>
+                <span>P123</span>
               </button>
             </form>
           </div>
@@ -950,17 +933,17 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         <table className="w-full text-left border-collapse min-w-[1000px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
             <tr className="border-b-2 border-[#ccff00]/40 text-[11px] font-mono-code uppercase text-[#ccff00] tracking-wider">
-              <th className="py-3 px-3 bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("SESH", { size: "0.85em", spacing: "mx-0.5" })}</div></th>
-              <th className="py-3 px-3 bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("NAMA PASARAN", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("JAM TUTUP", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("JAM RESULT", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("LINK", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("RESULT STATUS", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("P1", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("P2", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("P3", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("STATUS", { size: "0.85em", spacing: "mx-1" })}</div></th>
-              <th className="py-3 px-3 text-right bg-[#0d1222]"><div className="fire-title-container">{renderFireLetters("OPSI", { size: "0.85em", spacing: "mx-1" })}</div></th>
+              <th className="py-3 px-3 bg-[#0d1222]">SESH</th>
+              <th className="py-3 px-3 bg-[#0d1222]">NAMA PASARAN</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">JAM TUTUP</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">JAM RESULT</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">LINK</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">RESULT STATUS</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">P1</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">P2</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">P3</th>
+              <th className="py-3 px-3 text-center bg-[#0d1222]">STATUS</th>
+              <th className="py-3 px-3 text-right bg-[#0d1222]">OPSI</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ccff00]/10 text-xs font-mono-code">
