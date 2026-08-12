@@ -18,10 +18,32 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { getAnalytics } from "firebase/analytics";
-import defaultConfig from '../../firebase-applet-config.json';
 
 /**
- * Interface untuk Profil Pengguna
+ * KONFIGURASI FIREBASE (Sesuai Gambar Anda)
+ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC5leEQNIv-wSCMJaeWQQab1QCVejydIBU",
+  authDomain: "togelup-crypto.firebaseapp.com",
+  projectId: "togelup-crypto",
+  storageBucket: "togelup-crypto.firebasestorage.app",
+  messagingSenderId: "252463725245",
+  appId: "1:252463725245:web:746df21deced249daa55d4",
+  measurementId: "G-0V5WVYQKQN"
+};
+
+// Inisialisasi Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+// Aktifkan Analytics jika di browser
+if (typeof window !== 'undefined') {
+  getAnalytics(app);
+}
+
+/**
+ * INTERFACE DATA
  */
 export interface UserProfile {
   uid: string;
@@ -32,60 +54,16 @@ export interface UserProfile {
   lastLogin: number;
 }
 
-/**
- * Interface untuk Konfigurasi Firebase
- */
-export interface FirebaseConfigType {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket?: string;
-  messagingSenderId?: string;
-  appId?: string;
-  measurementId?: string;
-  firestoreDatabaseId?: string;
+export interface AppDataPayload {
+  categories: any[];
+  templates: any[];
+  reports: any[];
+  pasaranList: any[];
+  tickerText: string;
+  updatedAt?: number;
 }
 
-/**
- * Mengambil konfigurasi aktif
- */
-export function getActiveFirebaseConfig(): FirebaseConfigType {
-  const env = (import.meta as any).env || {};
-  if (env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_API_KEY) {
-    return {
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || `${env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || `${env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: env.VITE_FIREBASE_APP_ID || '',
-      measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || '',
-      firestoreDatabaseId: env.VITE_FIREBASE_DATABASE_ID || '(default)',
-    };
-  }
-  return defaultConfig;
-}
-
-// Inisialisasi Firebase App
-const activeConfig = getActiveFirebaseConfig();
-const appName = activeConfig.projectId ? `app-${activeConfig.projectId}` : '[DEFAULT]';
-const existingApp = getApps().find((a) => a.name === appName);
-const app = existingApp || initializeApp(activeConfig, appName);
-
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-
-// Aktifkan Analytics
-if (typeof window !== 'undefined' && activeConfig.measurementId) {
-  getAnalytics(app);
-}
-
-// --- FUNGSI PEMBERSIH DATA (ANTIDOTE UNTUK ERROR UNDEFINED) ---
-
-/**
- * Membersihkan objek secara mendalam. 
- * Mengubah 'undefined' menjadi 'null' karena Firestore melarang 'undefined'.
- */
+// --- FUNGSI PEMBERSIH DATA (Firestore tidak menerima 'undefined') ---
 const sanitizeData = (data: any): any => {
   return JSON.parse(
     JSON.stringify(data, (key, value) => (value === undefined ? null : value))
@@ -94,11 +72,12 @@ const sanitizeData = (data: any): any => {
 
 // --- FUNGSI AUTENTIKASI ---
 
-export async function registerUser(email: string, pass: string, displayName: string, role: string = 'member'): Promise<UserProfile> {
+export async function registerUser(email: string, pass: string, displayName: string, role: string = 'Member'): Promise<UserProfile> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
   const user = userCredential.user;
   const nameToUse = displayName.trim() || email.split('@')[0];
   await updateProfile(user, { displayName: nameToUse });
+  
   const profile: UserProfile = {
     uid: user.uid,
     email: user.email || email,
@@ -107,6 +86,7 @@ export async function registerUser(email: string, pass: string, displayName: str
     createdAt: Date.now(),
     lastLogin: Date.now(),
   };
+  
   await setDoc(doc(db, 'users', user.uid), profile);
   return profile;
 }
@@ -116,22 +96,23 @@ export async function loginUser(email: string, pass: string): Promise<UserProfil
   const user = userCredential.user;
   const userDocRef = doc(db, 'users', user.uid);
   const snap = await getDoc(userDocRef);
-  let profile: UserProfile;
+  
   if (snap.exists()) {
-    profile = snap.data() as UserProfile;
+    const profile = snap.data() as UserProfile;
     await setDoc(userDocRef, { lastLogin: Date.now() }, { merge: true });
+    return profile;
   } else {
-    profile = {
+    const newProfile: UserProfile = {
       uid: user.uid,
       email: user.email || '',
-      displayName: user.displayName || '',
-      role: 'member',
+      displayName: user.displayName || 'User',
+      role: 'Member',
       createdAt: Date.now(),
       lastLogin: Date.now(),
     };
-    await setDoc(userDocRef, profile);
+    await setDoc(userDocRef, newProfile);
+    return newProfile;
   }
-  return profile;
 }
 
 export async function logoutUser() {
@@ -148,82 +129,59 @@ export function subscribeAuthState(callback: (userProfile: UserProfile | null, l
     if (snap.exists()) {
       callback(snap.data() as UserProfile, false);
     } else {
-      const fallback: UserProfile = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || '',
-        displayName: firebaseUser.displayName || 'User',
-        role: 'member',
-        createdAt: Date.now(),
-        lastLogin: Date.now(),
-      };
-      callback(fallback, false);
+      callback(null, false);
     }
   });
 }
 
-/**
- * MENGEMBALIKAN FUNGSI YANG HILANG (Penting untuk Vercel Build)
- */
 export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
   try {
     const snap = await getDocs(collection(db, 'users'));
     const list: UserProfile[] = [];
-    snap.forEach((d) => {
-      list.push(d.data() as UserProfile);
-    });
-    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    snap.forEach((d) => list.push(d.data() as UserProfile));
+    return list.sort((a, b) => b.createdAt - a.createdAt);
   } catch (err) {
-    console.error('Gagal mengambil daftar user:', err);
+    console.error('Gagal ambil user:', err);
     return [];
   }
 }
 
-// --- FUNGSI DATABASE GLOBAL (SHARED) ---
+// --- FUNGSI DATABASE GLOBAL (SHARED DASHBOARD) ---
 
 const getSharedDocRef = () => {
   return doc(db, 'app_data', 'shared_dashboard_data');
 };
 
-export interface AppDataPayload {
-  mainMenus: any[];
-  categories: any[];
-  templates: any[];
-  reports: any[];
-  pasaranList?: any[];
-  tickerText?: string;
-  updatedAt?: number;
-}
-
+/**
+ * Berlangganan data secara realtime.
+ * Jika data berubah di Firebase, dashboard di semua PC akan langsung update.
+ */
 export function subscribeToAppData(onData: (data: AppDataPayload | null) => void) {
   return onSnapshot(getSharedDocRef(), (docSnap) => {
     if (docSnap.exists()) {
       onData(docSnap.data() as AppDataPayload);
     } else {
-      onData(null);
+      onData(null); // Data belum ada
     }
   }, (err) => {
     console.error('Firestore Read Error:', err);
-    onData(null);
   });
 }
 
+/**
+ * Simpan data ke Firestore.
+ */
 export async function saveAppDataToFirestore(data: AppDataPayload) {
   if (!auth.currentUser) return;
   
   try {
-    const docRef = getSharedDocRef();
-    
-    // MEMBERSIHKAN DATA SECARA TOTAL DARI NILAI UNDEFINED
     const cleanData = sanitizeData(data);
-
-    await setDoc(docRef, {
+    await setDoc(getSharedDocRef(), {
       ...cleanData,
       updatedAt: Date.now(),
     }, { merge: true });
-    
-    console.log("Sinkronisasi Cloud Berhasil.");
   } catch (err: any) {
-    console.error('Gagal menyimpan ke Firestore:', err);
+    console.error('Gagal simpan ke Cloud:', err);
     throw err;
   }
 }
