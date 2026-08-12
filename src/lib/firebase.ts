@@ -19,9 +19,7 @@ import {
 } from 'firebase/auth';
 import { getAnalytics } from "firebase/analytics";
 
-/**
- * KONFIGURASI FIREBASE (Sesuai Gambar Anda)
- */
+// Konfigurasi dari gambar Anda
 const firebaseConfig = {
   apiKey: "AIzaSyC5leEQNIv-wSCMJaeWQQab1QCVejydIBU",
   authDomain: "togelup-crypto.firebaseapp.com",
@@ -32,19 +30,14 @@ const firebaseConfig = {
   measurementId: "G-0V5WVYQKQN"
 };
 
-// Inisialisasi Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Aktifkan Analytics jika di browser
 if (typeof window !== 'undefined') {
   getAnalytics(app);
 }
 
-/**
- * INTERFACE DATA
- */
 export interface UserProfile {
   uid: string;
   email: string;
@@ -63,14 +56,12 @@ export interface AppDataPayload {
   updatedAt?: number;
 }
 
-// --- FUNGSI PEMBERSIH DATA (Firestore tidak menerima 'undefined') ---
+// Menghapus nilai undefined agar tidak error di Firestore
 const sanitizeData = (data: any): any => {
   return JSON.parse(
     JSON.stringify(data, (key, value) => (value === undefined ? null : value))
   );
 };
-
-// --- FUNGSI AUTENTIKASI ---
 
 export async function registerUser(email: string, pass: string, displayName: string, role: string = 'Member'): Promise<UserProfile> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -139,41 +130,29 @@ export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
     const snap = await getDocs(collection(db, 'users'));
     const list: UserProfile[] = [];
     snap.forEach((d) => list.push(d.data() as UserProfile));
-    return list.sort((a, b) => b.createdAt - a.createdAt);
+    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   } catch (err) {
-    console.error('Gagal ambil user:', err);
     return [];
   }
 }
 
-// --- FUNGSI DATABASE GLOBAL (SHARED DASHBOARD) ---
+// KOLEKSI DATA DASHBOARD GLOBAL
+const getSharedDocRef = () => doc(db, 'app_data', 'shared_dashboard_data');
 
-const getSharedDocRef = () => {
-  return doc(db, 'app_data', 'shared_dashboard_data');
-};
-
-/**
- * Berlangganan data secara realtime.
- * Jika data berubah di Firebase, dashboard di semua PC akan langsung update.
- */
 export function subscribeToAppData(onData: (data: AppDataPayload | null) => void) {
   return onSnapshot(getSharedDocRef(), (docSnap) => {
     if (docSnap.exists()) {
       onData(docSnap.data() as AppDataPayload);
     } else {
-      onData(null); // Data belum ada
+      onData(null);
     }
   }, (err) => {
-    console.error('Firestore Read Error:', err);
+    console.error('Firestore Error:', err);
   });
 }
 
-/**
- * Simpan data ke Firestore.
- */
 export async function saveAppDataToFirestore(data: AppDataPayload) {
   if (!auth.currentUser) return;
-  
   try {
     const cleanData = sanitizeData(data);
     await setDoc(getSharedDocRef(), {
@@ -181,7 +160,6 @@ export async function saveAppDataToFirestore(data: AppDataPayload) {
       updatedAt: Date.now(),
     }, { merge: true });
   } catch (err: any) {
-    console.error('Gagal simpan ke Cloud:', err);
     throw err;
   }
 }
