@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MainMenuItem, CategoryItem, ReportItem, SortOption, TemplateItem, PasaranItem } from './types';
-import { INITIAL_MAIN_MENUS, INITIAL_PASARAN_LIST } from './data/initialData';
+import { INITIAL_MAIN_MENUS } from './data/initialData';
 import { Header } from './components/Header';
 import { TickerBar } from './components/TickerBar';
 import { Sidebar } from './components/Sidebar';
@@ -12,18 +12,11 @@ import { DashboardResultView } from './components/DashboardResultView';
 import { ImageLightboxModal } from './components/ImageLightboxModal';
 import { AddEditModal } from './components/AddEditModal';
 import { CategoryModal } from './components/CategoryModal';
-import { ReportModal } from './components/ReportModal';
-import { VariableReplacerModal } from './components/VariableReplacerModal';
-import { PhpSqlModal } from './components/PhpSqlModal';
 import { AuthModal } from './components/AuthModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { copyImageToClipboard } from './utils/copyImage';
 import { subscribeToAppData, saveAppDataToFirestore, subscribeAuthState, UserProfile } from './lib/firebase';
-import {
-  RotateCw,
-  FolderOpen,
-  Sparkles,
-} from 'lucide-react';
+import { RotateCw, FolderOpen, Sparkles, CloudCheck } from 'lucide-react';
 
 export default function App() {
   // --- UI States ---
@@ -31,24 +24,22 @@ export default function App() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
-  const [pasaranList, setPasaranList] = useState<PasaranItem[]>(INITIAL_PASARAN_LIST);
-  const [tickerText, setTickerText] = useState("RINJANI SYSTEM - DASHBOARD PENYIMPANAN DATA & KATA-KATA TERPADU");
+  const [pasaranList, setPasaranList] = useState<PasaranItem[]>([]);
+  const [tickerText, setTickerText] = useState("SELAMAT DATANG DI RINJANI DASHBOARD - SILAKAN INPUT DATA ANDA");
   
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // --- MENU PERSISTENCE (PENGINGAT MENU SAAT REFRESH) ---
+  // --- Menu Persistence ---
   const [selectedMainMenuId, setSelectedMainMenuId] = useState<string | null>(() => {
-    // Ambil menu terakhir dari localStorage, jika tidak ada default ke PK CHAT
     return localStorage.getItem('rinjani_last_main_menu') || 'menu-pk-live-chat';
   });
-
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(() => {
-    // Ambil sub-menu terakhir dari localStorage
     return localStorage.getItem('rinjani_last_category') || null;
   });
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('terbaru');
+  const [sortBy] = useState<SortOption>('terbaru');
   const [isWideMode, setIsWideMode] = useState<boolean>(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
@@ -59,77 +50,76 @@ export default function App() {
   const [editItem, setEditItem] = useState<TemplateItem | null>(null);
   const [viewingImageItem, setViewingImageItem] = useState<TemplateItem | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isPhpSqlModalOpen, setIsPhpSqlModalOpen] = useState(false);
-  const [reportItem, setReportItem] = useState<TemplateItem | null>(null);
-  const [varReplacerItem, setVarReplacerItem] = useState<TemplateItem | null>(null);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Sync Locks
-  const isSyncingFromCloud = useRef(false);
-  const hasEverLoaded = useRef(false);
+  // Flags to prevent accidental data overwrites
+  const isInitialLoadRef = useRef(true);
 
-  // --- EFFECT: SAVE LAST MENU POSITION ---
+  // --- 1. REALTIME FETCH DARI FIREBASE ---
   useEffect(() => {
-    if (selectedMainMenuId) {
-      localStorage.setItem('rinjani_last_main_menu', selectedMainMenuId);
-    }
-    if (selectedCategoryId) {
-      localStorage.setItem('rinjani_last_category', selectedCategoryId);
-    } else {
-      localStorage.removeItem('rinjani_last_category');
-    }
-  }, [selectedMainMenuId, selectedCategoryId]);
-
-  // --- 1. DOWNLOAD DATA DARI CLOUD ---
-  useEffect(() => {
-    const unsubAuth = subscribeAuthState((profile) => setCurrentUser(profile));
+    // Pantau status Login
+    const unsubAuth = subscribeAuthState((profile) => {
+      setCurrentUser(profile);
+    });
     
+    // Pantau perubahan Data di Cloud
     const unsubData = subscribeToAppData((cloudData) => {
-      isSyncingFromCloud.current = true;
-      
       if (cloudData) {
-        if (Array.isArray(cloudData.categories)) setCategories(cloudData.categories);
-        if (Array.isArray(cloudData.templates)) setTemplates(cloudData.templates);
-        if (Array.isArray(cloudData.reports)) setReports(cloudData.reports);
-        if (Array.isArray(cloudData.pasaranList)) setPasaranList(cloudData.pasaranList);
-        if (cloudData.tickerText) setTickerText(cloudData.tickerText);
+        setCategories(cloudData.categories || []);
+        setTemplates(cloudData.templates || []);
+        setReports(cloudData.reports || []);
+        setPasaranList(cloudData.pasaranList || []);
+        setTickerText(cloudData.tickerText || "RINJANI DASHBOARD ACTIVE");
       }
-      
-      hasEverLoaded.current = true;
       setIsLoading(false);
-      
-      setTimeout(() => { isSyncingFromCloud.current = false; }, 2000);
+      isInitialLoadRef.current = false; // Setel ke false setelah data pertama masuk
     });
 
-    return () => { unsubAuth(); unsubData(); };
+    return () => { 
+      unsubAuth(); 
+      unsubData(); 
+    };
   }, []);
 
-  // --- 2. UPLOAD DATA KE CLOUD (AUTO-SAVE) ---
+  // --- 2. AUTO-SAVE KE FIREBASE SETIAP ADA PERUBAHAN ---
   useEffect(() => {
-    if (!hasEverLoaded.current || isSyncingFromCloud.current || !currentUser) return;
+    // Jangan simpan jika sedang loading awal atau user belum login
+    if (isInitialLoadRef.current || !currentUser) return;
 
-    const autoSave = async () => {
+    const performSync = async () => {
+      setIsSaving(true);
       try {
         await saveAppDataToFirestore({
-          mainMenus,
           categories,
           templates,
           reports,
           pasaranList,
           tickerText
         });
-      } catch (err: any) {
-        // Silent error for background sync
+        console.log("Cloud Updated.");
+      } catch (e) {
+        console.error("Sync Error");
+      } finally {
+        // Beri jeda sedikit agar indikator saving terlihat
+        setTimeout(() => setIsSaving(false), 800);
       }
     };
 
-    const timeout = setTimeout(autoSave, 3000);
-    return () => clearTimeout(timeout);
+    // Debounce: Tunggu 2 detik diam baru simpan (menghemat kuota Firebase)
+    const timer = setTimeout(performSync, 2000);
+    return () => clearTimeout(timer);
   }, [categories, templates, reports, pasaranList, tickerText, currentUser]);
 
-  // --- Handlers ---
+  // --- Persistence ---
+  useEffect(() => {
+    if (selectedMainMenuId) localStorage.setItem('rinjani_last_main_menu', selectedMainMenuId);
+    if (selectedCategoryId) localStorage.setItem('rinjani_last_category', selectedCategoryId);
+    else localStorage.removeItem('rinjani_last_category');
+  }, [selectedMainMenuId, selectedCategoryId]);
+
+  // --- Toast Handlers ---
   const addToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, type, text }]);
@@ -139,17 +129,18 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  // --- Action Handlers ---
   const handleCopyText = (text: string, id?: string) => {
     navigator.clipboard.writeText(text);
     if (id) setCopiedId(id);
-    addToast('Teks berhasil disalin!', 'success');
+    addToast('Berhasil disalin!', 'success');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleCopyImage = async (imageUrl: string, id?: string) => {
     if (id) setCopiedId(id);
     const success = await copyImageToClipboard(imageUrl);
-    addToast(success ? 'Gambar disalin (Siap Paste)!' : 'Link gambar disalin.', 'success');
+    addToast(success ? 'Gambar disalin!' : 'Link gambar disalin.', 'success');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -157,18 +148,18 @@ export default function App() {
     const now = new Date().toISOString();
     if (id) {
       setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...data, updatedAt: now } : t));
-      addToast('Data Cloud diperbarui!', 'success');
+      addToast('Data diperbarui.', 'success');
     } else {
       const newItem = { ...data, id: 'tpl-' + Date.now(), createdAt: now, updatedAt: now };
       setTemplates(prev => [newItem, ...prev]);
-      addToast('Data baru masuk ke Cloud!', 'success');
+      addToast('Data ditambahkan.', 'success');
     }
   };
 
   const handleDeleteTemplate = (id: string) => {
     if (window.confirm('Hapus data ini secara permanen dari Cloud?')) {
       setTemplates(prev => prev.filter(t => t.id !== id));
-      addToast('Data Cloud terhapus.', 'info');
+      addToast('Data terhapus.', 'info');
     }
   };
 
@@ -179,7 +170,7 @@ export default function App() {
   const handleAddCategory = (catData: any) => {
     const newCat = { ...catData, id: 'cat-' + Date.now(), order: categories.length + 1 };
     setCategories(prev => [...prev, newCat]);
-    addToast('Sub-Menu berhasil dibuat!', 'success');
+    addToast('Sub-Menu dibuat.', 'success');
   };
 
   const handleDeleteCategory = (id: string) => {
@@ -190,6 +181,7 @@ export default function App() {
     }
   };
 
+  // --- Filtering ---
   const filteredTemplates = useMemo(() => {
     return templates.filter((item) => {
       if (selectedMainMenuId && item.mainMenuId !== selectedMainMenuId) return false;
@@ -205,19 +197,16 @@ export default function App() {
   const sortedTemplates = useMemo(() => {
     return [...filteredTemplates].sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-      return sortBy === 'terbaru' 
-        ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [filteredTemplates, sortBy]);
+  }, [filteredTemplates]);
 
-  // Loading Screen
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
         <div className="text-center space-y-6">
-          <RotateCw className="w-16 h-16 text-lime-400 animate-spin mx-auto" />
-          <h1 className="text-lime-400 font-brand font-black text-xl tracking-widest animate-pulse uppercase">Sinkronisasi Cloud...</h1>
+          <RotateCw className="w-16 h-16 text-[#ccff00] animate-spin mx-auto" />
+          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">Menghubungkan ke Cloud...</h1>
         </div>
       </div>
     );
@@ -225,13 +214,27 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0b0c14] text-slate-100 font-sans pb-16 relative">
+      
+      {/* Indikator Cloud Sync */}
+      {isSaving && (
+        <div className="fixed bottom-5 left-5 z-50 bg-black/80 border border-[#ccff00]/50 px-4 py-2 rounded-full flex items-center gap-2 text-[10px] font-bold text-[#ccff00] animate-fade-in shadow-lg">
+          <RotateCw className="w-3 h-3 animate-spin" />
+          <span>SINKRONISASI CLOUD...</span>
+        </div>
+      )}
+      {!isSaving && currentUser && (
+        <div className="fixed bottom-5 left-5 z-50 bg-[#ccff00]/10 border border-[#ccff00]/30 px-4 py-2 rounded-full flex items-center gap-2 text-[10px] font-bold text-[#ccff00] shadow-sm">
+          <CloudCheck className="w-3 h-3" />
+          <span>CLOUD TERHUBUNG</span>
+        </div>
+      )}
+
       <Sidebar
         mainMenus={mainMenus}
         selectedMainMenuId={selectedMainMenuId}
         onSelectMainMenu={(id) => { 
           setSelectedMainMenuId(id); 
           setSelectedCategoryId(null); 
-          localStorage.removeItem('rinjani_last_category'); // Reset sub-menu saat pindah modul utama
         }}
         mainMenuCounts={{}}
         totalCount={templates.length}
@@ -248,7 +251,7 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           onOpenAddModal={() => { setEditItem(null); setIsAddModalOpen(true); }}
           onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
-          onOpenPhpSqlModal={() => setIsPhpSqlModalOpen(true)}
+          onOpenPhpSqlModal={() => {}} // Nonaktifkan karena sudah Firebase
           onOpenAuthModal={() => setIsAuthModalOpen(true)}
           currentUser={currentUser}
           isWideMode={isWideMode}
@@ -261,11 +264,11 @@ export default function App() {
 
         <main className="w-full pt-5 px-6">
           {!currentUser ? (
-             <div className="bg-[#121322] border-2 border-amber-500/50 rounded-3xl p-16 text-center space-y-5 shadow-2xl">
+             <div className="bg-[#121322] border-2 border-amber-500/50 rounded-3xl p-16 text-center space-y-5 shadow-2xl mt-10">
                 <Sparkles className="w-10 h-10 text-amber-400 mx-auto" />
                 <h2 className="text-2xl font-black text-amber-400 font-brand uppercase tracking-tighter">DATABASE TERKUNCI</h2>
-                <p className="text-slate-400 text-sm max-w-md mx-auto">Silakan Login untuk sinkronisasi data dari Cloud Firebase.</p>
-                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-3.5 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg">LOGIN SEKARANG</button>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">Silakan Daftar Akun atau Login untuk mengelola data Cloud Firebase Anda sendiri.</p>
+                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-3.5 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg">MASUK / DAFTAR</button>
              </div>
           ) : (
             <div className="flex flex-col md:flex-row gap-6">
@@ -290,18 +293,18 @@ export default function App() {
                 ) : (
                   <>
                     <div className="bg-[#121322] border border-[#23253b] rounded-2xl p-5 flex justify-between items-center shadow-lg">
-                      <h2 className="text-2xl font-black text-lime-400 uppercase tracking-tight font-brand">
+                      <h2 className="text-2xl font-black text-[#ccff00] uppercase tracking-tight font-brand">
                         {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'SEMUA DATA'}
                       </h2>
-                      <button onClick={() => setIsAddModalOpen(true)} className="bg-lime-400 hover:bg-lime-300 text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs shadow-md transition-all active:scale-95">
-                        + TAMBAH DATA
+                      <button onClick={() => { setEditItem(null); setIsAddModalOpen(true); }} className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs shadow-md transition-all active:scale-95">
+                        + TAMBAH DATA BARU
                       </button>
                     </div>
 
                     {sortedTemplates.length === 0 ? (
                       <div className="p-24 text-center bg-[#121322] rounded-2xl border-2 border-dashed border-slate-800">
                         <FolderOpen className="w-14 h-14 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">Database Cloud Kosong.</p>
+                        <p className="text-slate-500 font-bold uppercase tracking-widest italic">Belum ada data. Klik tombol Tambah di atas.</p>
                       </div>
                     ) : (
                       <div className={`grid gap-5 ${isWideMode ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
