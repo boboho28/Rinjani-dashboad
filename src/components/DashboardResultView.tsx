@@ -567,7 +567,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setResultStatusInput('');
   };
 
-  // --- UPDATE: LOGIKA P1 TERMINAL (DENGAN PEMBERSIHAN NAMA PASARAN) ---
   const handleProcessP1Terminal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!p1TerminalInput.trim()) {
@@ -583,11 +582,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return;
     }
 
-    // LOGIKA PERBAIKAN: Hapus nama pasaran dari string input agar angka di nama pasaran tidak ikut terambil
     const nameToStrip = matchedItem.name.toUpperCase();
     const stringWithoutName = rawStr.replace(nameToStrip, '');
-    
-    // Ambil angka dari sisa string tersebut
     const numbers = stringWithoutName.match(/\d+/g) || [];
     
     if (numbers.length === 0) {
@@ -595,7 +591,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return;
     }
 
-    // Ambil angka pertama yang ditemukan setelah nama pasaran dihapus
     const p1Value = numbers[0];
 
     setPasaranList((prev) =>
@@ -631,7 +626,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return;
     }
 
-    // Sama seperti P1, sebaiknya hapus nama pasaran dulu agar angka di nama tidak terdeteksi sebagai prize
     const nameToStrip = matchedItem.name.toUpperCase();
     const stringWithoutName = cleanStr.replace(nameToStrip, '');
     const numbers = stringWithoutName.match(/\d+/g) || [];
@@ -956,14 +950,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     </span>
                   </td>
 
+                  {/* UPDATE P2: Styling disamakan dengan P1 */}
                   <td className="py-2.5 px-3 text-center">
-                    <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
+                    <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
+                  {/* UPDATE P3: Styling disamakan dengan P1 */}
                   <td className="py-2.5 px-3 text-center">
-                    <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
+                    <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p3Prize || '-'}
                     </span>
                   </td>
