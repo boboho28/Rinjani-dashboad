@@ -1,7 +1,7 @@
 import { MainMenuItem, CategoryItem, TemplateItem, PasaranItem } from '../types';
 
 /**
- * Menu Utama tetap ada sebagai struktur dasar dashboard.
+ * Menu Utama tetap dipertahankan karena ini adalah struktur navigasi dashboard.
  */
 export const INITIAL_MAIN_MENUS: MainMenuItem[] = [
   {
@@ -35,8 +35,9 @@ export const INITIAL_MAIN_MENUS: MainMenuItem[] = [
 ];
 
 /**
- * Data di bawah ini dikosongkan agar user mengisi sendiri lewat dashboard.
+ * SEMUA DATA DI BAWAH INI WAJIB KOSONG 
+ * Agar dashboard tidak memunculkan data lama saat loading.
  */
 export const INITIAL_CATEGORIES: CategoryItem[] = [];
 export const INITIAL_TEMPLATES: TemplateItem[] = [];
-export const INITIAL_PASARAN_LIST: PasaranItem[] = []; // User tambahkan pasaran sendiri
+export const INITIAL_PASARAN_LIST: PasaranItem[] = []; // SUDAH KOSONG
