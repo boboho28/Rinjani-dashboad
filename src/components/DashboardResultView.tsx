@@ -44,7 +44,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   setPasaranList,
   addToast,
 }) => {
-  // --- SESSION PERSISTENCE (PENGINGAT SESI SAAT REFRESH) ---
+  // --- SESSION PERSISTENCE ---
   const [selectedSession, setSelectedSession] = useState<string>(() => {
     return localStorage.getItem('rinjani_last_result_session') || 'SORE';
   });
@@ -52,12 +52,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
-  // Simpan pilihan sesi ke localStorage setiap kali berubah
   useEffect(() => {
     localStorage.setItem('rinjani_last_result_session', selectedSession);
   }, [selectedSession]);
 
-  // Live 1-second clock ticker for countdown
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -71,7 +69,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [showAlarmConfigModal, setShowAlarmConfigModal] = useState<boolean>(false);
   const triggeredAlarmsRef = useRef<Set<string>>(new Set());
 
-  // Audio Ref
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alarmIntervalRef = useRef<any>(null);
 
@@ -134,7 +131,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     }
   };
 
-  // Keyboard shortcut listener for SPACE or ESC to close alarm
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeAlarm) {
@@ -151,7 +147,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     };
   }, [activeAlarm]);
 
-  // Check pasaran countdown for alarm trigger when countdown expires (diffSecs <= 0)
   useEffect(() => {
     if (!isAlarmEnabled) return;
 
@@ -190,12 +185,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     });
   }, [currentTime, pasaranList, isAlarmEnabled]);
 
-  // Direct Terminal Prize & Status Inputs State
+  // --- TERMINAL STATE ---
   const [resultStatusInput, setResultStatusInput] = useState<string>('');
   const [p1TerminalInput, setP1TerminalInput] = useState<string>('');
   const [p123TerminalInput, setP123TerminalInput] = useState<string>('');
 
-  // Result & Shio Popup State
   const [isResultPopupOpen, setIsResultPopupOpen] = useState<boolean>(false);
   const [popupPasaran, setPopupPasaran] = useState<PasaranItem | null>(null);
   const [popupText, setPopupText] = useState<string>('');
@@ -262,11 +256,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setIsResultPopupOpen(true);
   };
 
-  // Modal State for Add / Edit Pasaran
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editItem, setEditItem] = useState<PasaranItem | null>(null);
 
-  // Form Fields
   const [formName, setFormName] = useState<string>('');
   const [formSession, setFormSession] = useState<'PAGI' | 'SORE' | 'MALAM' | 'DINI HARI'>('SORE');
   const [formJamTutup, setFormJamTutup] = useState<string>('15:00 WIB');
@@ -278,13 +270,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [formStatus, setFormStatus] = useState<'BELUM' | 'DONE' | 'LIBUR'>('BELUM');
   const [formIsResultNow, setFormIsResultNow] = useState<boolean>(true);
 
-  // Filter List by Session
   const filteredList = pasaranList.filter((item) => {
     if (selectedSession === 'SEMUA' || selectedSession === 'ALL PASARAN') return true;
     return item.session === selectedSession;
   });
 
-  // --- LOGIKA SORTING BERDASARKAN JAM TUTUP (00:00 TERATAS) ---
   const sortedFilteredList = [...filteredList].sort((a, b) => {
     const getTimeValue = (jamStr: string) => {
       const match = jamStr.match(/(\d{1,2}):(\d{2})/);
@@ -395,7 +385,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     if (!pasaranList || pasaranList.length === 0) return undefined;
     const sortedPasaran = [...pasaranList].sort((a, b) => b.name.length - a.name.length);
     
-    // 1. Search if pasaran name is mentioned in input
     let matched = sortedPasaran.find((p) => inputStr.includes(p.name.toUpperCase()));
     if (!matched) {
       matched = sortedPasaran.find((p) => {
@@ -405,11 +394,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     }
     if (matched) return matched;
 
-    // 2. Fallback: Pasaran currently in RESULT NOW! state
     const resultNowItem = pasaranList.find((p) => p.isResultNow || (p.status === 'BELUM' && isJamPassed(p.jamTutup)));
     if (resultNowItem) return resultNowItem;
 
-    // 3. Fallback: First pasaran with status BELUM in active session
     const activeSessionPasaran = pasaranList.find((p) => {
       if (selectedSession !== 'ALL PASARAN' && selectedSession !== 'SEMUA' && p.session !== selectedSession) {
         return false;
@@ -418,11 +405,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     });
     if (activeSessionPasaran) return activeSessionPasaran;
 
-    // 4. Default: First pasaran in overall list
     return pasaranList[0];
   };
 
-  // --- RESET SESI FUNCTION ---
   const handleResetSession = () => {
     const sessionLabel =
       selectedSession === 'ALL PASARAN' || selectedSession === 'SEMUA'
@@ -451,7 +436,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     addToast(`🔄 Status & Result P1 P2 P3 untuk ${sessionLabel} berhasil di-reset ke awal!`, 'success');
   };
 
-  // --- HELPER TO EXTRACT MULTIPLE LINKS ---
   const getUrlsFromItem = (item: PasaranItem): string[] => {
     if (!item.linkUrl) return [];
     return item.linkUrl
@@ -473,13 +457,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     });
   };
 
-  // --- RENDER LIVE RESULT STATUS WITH COUNTDOWN TO JAM TUTUP ---
   const renderResultStatusBadge = (item: PasaranItem) => {
     if (item.status === 'DONE') {
       return (
         <div
           className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-default select-none"
-          title="Status Result: SUDAH RESULT"
         >
           SUDAH RESULT
         </div>
@@ -490,20 +472,17 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return (
         <div
           className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-amber-950/40 text-amber-300/80 border border-amber-500/30 cursor-default select-none"
-          title="Status Result: PASARAN LIBUR"
         >
           PASARAN LIBUR
         </div>
       );
     }
 
-    // Parse jamTutup e.g. "15:00 WIB" or "15:00"
     const matchTutup = item.jamTutup.match(/(\d{1,2}):(\d{2})/);
     if (!matchTutup) {
       return (
         <div
           className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 cursor-default select-none"
-          title="Status Result: BELUM RESULT"
         >
           BELUM RESULT
         </div>
@@ -533,7 +512,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return (
         <div
           className="inline-block font-mono-code font-black text-[10px] px-2.5 py-1 rounded-full tracking-wider bg-cyan-950/80 text-cyan-300 border border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.3)] cursor-default select-none"
-          title="Hitung Mundur ke Jam Tutup"
         >
           ⏳ TUTUP: {countdownStr}
         </div>
@@ -542,7 +520,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return (
         <div
           className="inline-block font-black text-[10px] px-3 py-1 rounded-full tracking-wider uppercase bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/60 shadow-[0_0_12px_rgba(217,70,239,0.7)] animate-pulse cursor-default select-none"
-          title="Jam Tutup telah lewat, Menunggu Result"
         >
           RESULT NOW!
         </div>
@@ -550,7 +527,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     }
   };
 
-  // --- RESULT STATUS / CROSSCHECK TERMINAL PARSER (UPDATE: VALIDASI PERIODE & NAMA PASARAN) ---
   const handleProcessResultStatusInput = (e: React.FormEvent) => {
     e.preventDefault();
     const rawStr = resultStatusInput.trim().toUpperCase();
@@ -560,20 +536,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return;
     }
 
-    // VALIDASI KHUSUS: Harus ada kata "PERIODE"
     if (!rawStr.includes("PERIODE")) {
-      addToast('Input Gagal! Harus mengandung kata "PERIODE" (contoh: periode : 686 ;pasar : TOTO MACAU PAGI)', 'error');
+      addToast('Input Gagal! Harus mengandung kata "PERIODE"', 'error');
       return;
     }
 
     const matchedItem = findTargetPasaran(rawStr);
 
     if (!matchedItem) {
-      addToast(`Nama pasaran dalam log tidak ditemukan di database dashboard.`, 'error');
+      addToast(`Nama pasaran tidak ditemukan di database.`, 'error');
       return;
     }
 
-    // Update status menjadi DONE
     setPasaranList((prev) =>
       prev.map((item) =>
         item.id === matchedItem.id
@@ -593,11 +567,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setResultStatusInput('');
   };
 
-  // --- TERMINAL PRIZE DIRECT INPUT PARSING LOGIC ---
+  // --- UPDATE: LOGIKA P1 TERMINAL (DENGAN PEMBERSIHAN NAMA PASARAN) ---
   const handleProcessP1Terminal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!p1TerminalInput.trim()) {
-      addToast('Masukkan nomor atau nama pasaran + nomor (contoh: TOTOMACAU SORE 5045 atau 5045)', 'error');
+      addToast('Masukkan nomor atau nama pasaran + nomor', 'error');
       return;
     }
 
@@ -605,17 +579,23 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     const matchedItem = findTargetPasaran(rawStr);
 
     if (!matchedItem) {
-      addToast(`Pasaran tidak ditemukan. Pastikan ada pasaran aktif.`, 'error');
+      addToast(`Pasaran tidak ditemukan.`, 'error');
       return;
     }
 
-    // Extract numbers
-    const numbers = rawStr.match(/\d+/g) || [];
+    // LOGIKA PERBAIKAN: Hapus nama pasaran dari string input agar angka di nama pasaran tidak ikut terambil
+    const nameToStrip = matchedItem.name.toUpperCase();
+    const stringWithoutName = rawStr.replace(nameToStrip, '');
+    
+    // Ambil angka dari sisa string tersebut
+    const numbers = stringWithoutName.match(/\d+/g) || [];
+    
     if (numbers.length === 0) {
-      addToast(`Angka result tidak ditemukan dalam input. Contoh: ${matchedItem.name} 5045 atau 5045`, 'error');
+      addToast(`Angka result tidak ditemukan dalam input setelah nama pasaran.`, 'error');
       return;
     }
 
+    // Ambil angka pertama yang ditemukan setelah nama pasaran dihapus
     const p1Value = numbers[0];
 
     setPasaranList((prev) =>
@@ -636,7 +616,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const handleProcessP123Terminal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!p123TerminalInput.trim()) {
-      addToast('Masukkan angka 3 prize (contoh: HUAHIN 1630 \\nPRIZE 1: 0574 \\nPRIZE 2: 5597 \\nPRIZE 3: 6047 atau 0574 5597 6047)', 'error');
+      addToast('Masukkan angka 3 prize', 'error');
       return;
     }
 
@@ -651,7 +631,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       return;
     }
 
-    const numbers = cleanStr.match(/\d+/g) || [];
+    // Sama seperti P1, sebaiknya hapus nama pasaran dulu agar angka di nama tidak terdeteksi sebagai prize
+    const nameToStrip = matchedItem.name.toUpperCase();
+    const stringWithoutName = cleanStr.replace(nameToStrip, '');
+    const numbers = stringWithoutName.match(/\d+/g) || [];
+    
     if (numbers.length === 0) {
       addToast(`Angka result tidak ditemukan.`, 'error');
       return;
@@ -684,9 +668,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   return (
     <div className="space-y-5 font-sans text-slate-100">
       
-      {/* 1. CSS STYLES FOR ALL LOADERS & CUSTOM EFFECTS */}
       <style>{`
-        /* EYE LOADER FOR LINK BUTTON */
         .link-loader {
           display: inline-flex;
           gap: 10px;
@@ -716,7 +698,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           100% {background-size:100% 40%,8px 8px}
         }
 
-        /* DIGITAL CLOCK LOADER FOR TIME COLUMNS */
         .digital-clock-container {
           width: fit-content;
           background: #000;
@@ -751,13 +732,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         }
       `}</style>
       
-      {/* 2. TOP HEADER TOOLBAR SECTION */}
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1">
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            {/* Shift Session Selector */}
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-2xl px-3 py-1.5 text-xs sm:text-sm text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
               <select
                 value={selectedSession}
@@ -851,7 +830,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             <form onSubmit={handleProcessP1Terminal} className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="P1 (e.g. TOTOMACAU SORE 5244)"
+                placeholder="P1 (e.g. BANGKOK 0130 5202)"
                 value={p1TerminalInput}
                 onChange={(e) => setP1TerminalInput(e.target.value)}
                 className="bg-[#04020a] text-[#ccff00] font-mono-code text-xs outline-none flex-1 font-bold placeholder-slate-600 px-3 py-2 rounded-xl border border-[#ccff00]/40 focus:border-[#ccff00]"
@@ -884,7 +863,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       </div>
 
-      {/* 3. MAIN PASARAN RESULT LIST TABLE CONTAINER */}
       <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-320px)] min-h-[350px] overflow-y-auto custom-scrollbar">
         <table className="w-full text-left border-collapse min-w-[1000px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
@@ -922,7 +900,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   }`}
                 >
                   <td className="py-2.5 px-3">
-                    {/* NEON STYLE BUTTON UNTUK SESH SESUAI MULUS VERSION */}
                     <div className="relative flex items-center h-7 w-fit bg-[#0a0518] rounded-md border border-[#8b5cf6]/50 overflow-hidden shadow-[0_0_8px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all">
                       <div className="flex items-center justify-center h-full aspect-square bg-gradient-to-b from-[#8b5cf6] to-[#4c1d95] shadow-[inset_0_0_4px_rgba(255,255,255,0.4)]">
                         <Zap className="w-3 h-3 text-white fill-white/20 animate-pulse" />
@@ -937,24 +914,20 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3">
-                    {/* CYBER 3D TEXT STYLE UNTUK NAMA PASARAN */}
                     <span className="font-brand font-black italic uppercase text-[14px] tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,3px_3px_0_#4c1d95,0_0_15px_rgba(34,211,238,0.7)] group-hover:scale-110 transition-transform inline-block">
                       {item.name}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* UPDATE: DIGITAL CLOCK LOADER STYLE UNTUK JAM TUTUP */}
                     <div className="digital-clock-container" data-time={item.jamTutup.replace(' WIB', '')} />
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* UPDATE: DIGITAL CLOCK LOADER STYLE UNTUK JAM RESULT */}
                     <div className="digital-clock-container" data-time={item.jamResult.replace(' WIB', '')} />
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* EYE LOADER UNTUK TOMBOL LINK */}
                     {(() => {
                       const urls = getUrlsFromItem(item);
                       if (urls.length === 0) {
@@ -978,21 +951,18 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER 3D STYLE UNTUK P1 (ENLARGED) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p1Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P2 (ENLARGED) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
                   <td className="py-2.5 px-3 text-center">
-                    {/* CYBER STYLE UNTUK P3 (ENLARGED) */}
                     <span className="font-mono-code font-black italic tracking-widest text-[14px] text-[#22d3ee]/95 [text-shadow:1.5px_1.5px_0_#4c1d95,0_0_8px_rgba(34,211,238,0.5)]">
                       {item.p3Prize || '-'}
                     </span>
@@ -1049,7 +1019,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </table>
       </div>
 
-      {/* 4. MODAL ADD/EDIT PASARAN */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-lg p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
@@ -1194,7 +1163,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 5. ACTIVE ALARM POPUP MODAL */}
       {activeAlarm && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
@@ -1223,7 +1191,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 6. ALARM CONFIGURATION MODAL */}
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl w-full max-w-md p-5 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-4">
@@ -1255,7 +1222,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 7. MODAL HASIL RESULT & SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-2xl w-full max-md sm:max-w-lg p-5 sm:p-6 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-5 animate-in fade-in zoom-in-95 duration-150">
