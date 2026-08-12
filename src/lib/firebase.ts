@@ -20,7 +20,7 @@ import {
 import { getAnalytics } from "firebase/analytics";
 
 /**
- * KONFIGURASI FIREBASE RESMI (Sesuai Akun Anda)
+ * KONFIGURASI FIREBASE RESMI
  */
 const firebaseConfig = {
   apiKey: "AIzaSyC5leEQNIv-wSCMJaeWQQab1QCVejydIBU",
@@ -32,7 +32,6 @@ const firebaseConfig = {
   measurementId: "G-0V5WVYQKQN"
 };
 
-// Inisialisasi Firebase (Mencegah inisialisasi ganda)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const db = getFirestore(app);
 export const auth = getAuth(app);
@@ -41,9 +40,6 @@ if (typeof window !== 'undefined') {
   getAnalytics(app);
 }
 
-/**
- * INTERFACE DATA PENGGUNA
- */
 export interface UserProfile {
   uid: string;
   email: string;
@@ -53,9 +49,6 @@ export interface UserProfile {
   lastLogin: number;
 }
 
-/**
- * INTERFACE DATA DASHBOARD
- */
 export interface AppDataPayload {
   categories: any[];
   templates: any[];
@@ -65,16 +58,13 @@ export interface AppDataPayload {
   updatedAt?: number;
 }
 
-/**
- * Membersihkan data dari nilai 'undefined' (Wajib untuk Firestore)
- */
 const sanitizeData = (data: any): any => {
   return JSON.parse(
     JSON.stringify(data, (key, value) => (value === undefined ? null : value))
   );
 };
 
-// --- FUNGSI AUTENTIKASI ---
+// --- FUNGSI AUTH ---
 
 export async function registerUser(email: string, pass: string, displayName: string, role: string = 'Member'): Promise<UserProfile> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -149,7 +139,7 @@ export async function fetchAllRegisteredUsers(): Promise<UserProfile[]> {
   }
 }
 
-// --- FUNGSI DATABASE UTAMA (REALTIME) ---
+// --- FUNGSI DATABASE UTAMA ---
 
 const getSharedDocRef = () => doc(db, 'app_data', 'shared_dashboard_data');
 
@@ -161,26 +151,24 @@ export function subscribeToAppData(onData: (data: AppDataPayload | null) => void
       onData(null);
     }
   }, (err) => {
-    console.error('Firestore Error:', err);
+    console.error('Firestore Realtime Error:', err);
   });
 }
 
 /**
- * PENTING: Menghapus { merge: true } agar data yang dihapus di dashboard
- * juga terhapus secara permanen di database Cloud.
+ * Fungsi Simpan Utama (Overwrite)
  */
 export async function saveAppDataToFirestore(data: AppDataPayload) {
   if (!auth.currentUser) return;
   try {
     const cleanData = sanitizeData(data);
-    // Overwrite secara total agar data sinkron 100%
     await setDoc(getSharedDocRef(), {
       ...cleanData,
       updatedAt: Date.now(),
-    }); 
-    console.log("Database Cloud Updated.");
+    });
+    console.log("✔️ Firebase Sync Success");
   } catch (err: any) {
-    console.error("Gagal Simpan ke Cloud:", err);
+    console.error("❌ Firebase Sync Failed:", err);
     throw err;
   }
 }
