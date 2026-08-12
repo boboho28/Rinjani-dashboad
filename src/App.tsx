@@ -16,23 +16,21 @@ import { AuthModal } from './components/AuthModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { copyImageToClipboard } from './utils/copyImage';
 import { subscribeToAppData, saveAppDataToFirestore, subscribeAuthState, UserProfile } from './lib/firebase';
-import { RotateCw, FolderOpen, Sparkles, CloudCheck, ShieldAlert } from 'lucide-react';
+import { RotateCw, FolderOpen, Sparkles, CloudCheck, ShieldAlert, WifiOff } from 'lucide-react';
 
 export default function App() {
-  // --- States Dasar (Selalu mulai dari kosong) ---
+  // --- States Dasar ---
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [pasaranList, setPasaranList] = useState<PasaranItem[]>([]);
-  const [tickerText, setTickerText] = useState("RINJANI SYSTEM - SILAKAN LOGIN UNTUK MENGELOLA DATA");
+  const [tickerText, setTickerText] = useState("DASHBOARD RINJANI AKTIF - SINKRONISASI CLOUD");
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // --- Keamanan Sinkronisasi ---
   const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
 
-  // --- UI Control ---
+  // --- UI States ---
   const [selectedMainMenuId, setSelectedMainMenuId] = useState<string | null>(() => {
     return localStorage.getItem('rinjani_last_main_menu') || 'menu-pk-live-chat';
   });
@@ -42,7 +40,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
-  // --- Auth & Modals ---
+  // --- Modals ---
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -53,61 +51,57 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // --- 1. SIKLUS HIDUP: DOWNLOAD DATA DARI CLOUD ---
+  // --- 1. SINKRONISASI AWAL ---
   useEffect(() => {
     const unsubAuth = subscribeAuthState((profile) => setCurrentUser(profile));
     
-    // Berlangganan data Cloud secara Realtime
     const unsubData = subscribeToAppData((cloudData) => {
       if (cloudData) {
         setCategories(cloudData.categories || []);
         setTemplates(cloudData.templates || []);
         setReports(cloudData.reports || []);
         setPasaranList(cloudData.pasaranList || []);
-        setTickerText(cloudData.tickerText || "DASHBOARD CONNECTED");
+        setTickerText(cloudData.tickerText || "RINJANI DASHBOARD SYSTEM");
       }
       setIsLoading(false);
-      setHasInitialLoaded(true); // KUNCI DIBUKA: Sekarang dashboard boleh menyimpan ke Cloud
+      setHasInitialLoaded(true);
     });
 
     return () => { unsubAuth(); unsubData(); };
   }, []);
 
-  // --- 2. SIKLUS HIDUP: AUTO-UPLOAD KE CLOUD ---
-  // Fungsi ini hanya berjalan jika data di Cloud sudah didownload (mencegah tumpang tindih data kosong)
-  useEffect(() => {
-    if (!hasInitialLoaded || !currentUser) return;
+  // --- 2. FUNGSI SIMPAN PAKSA (FORCE SYNC) ---
+  // Fungsi ini dipanggil manual setiap ada aksi ADD / EDIT / DELETE
+  const forceSync = async (overrides: Partial<{
+    categories: any[], 
+    templates: any[], 
+    pasaranList: any[], 
+    tickerText: string
+  }>) => {
+    if (!currentUser || !hasInitialLoaded) return;
+    
+    setIsSaving(true);
+    try {
+      await saveAppDataToFirestore({
+        categories: overrides.categories !== undefined ? overrides.categories : categories,
+        templates: overrides.templates !== undefined ? overrides.templates : templates,
+        reports: reports,
+        pasaranList: overrides.pasaranList !== undefined ? overrides.pasaranList : pasaranList,
+        tickerText: overrides.tickerText !== undefined ? overrides.tickerText : tickerText
+      });
+    } catch (e) {
+      addToast("Gagal menyambung ke Cloud. Cek Koneksi!", "error");
+    } finally {
+      setTimeout(() => setIsSaving(false), 800);
+    }
+  };
 
-    const autoSync = async () => {
-      setIsSaving(true);
-      try {
-        await saveAppDataToFirestore({
-          categories,
-          templates,
-          reports,
-          pasaranList,
-          tickerText
-        });
-      } catch (e) {
-        console.error("Sync Error");
-      } finally {
-        setTimeout(() => setIsSaving(false), 1000);
-      }
-    };
-
-    // Debounce 2 detik untuk menghemat traffic Firebase
-    const timer = setTimeout(autoSync, 2000);
-    return () => clearTimeout(timer);
-  }, [categories, templates, reports, pasaranList, tickerText, currentUser, hasInitialLoaded]);
-
-  // --- Persistence UI ---
+  // --- Handlers UI ---
   useEffect(() => {
     if (selectedMainMenuId) localStorage.setItem('rinjani_last_main_menu', selectedMainMenuId);
     if (selectedCategoryId) localStorage.setItem('rinjani_last_category', selectedCategoryId);
-    else localStorage.removeItem('rinjani_last_category');
   }, [selectedMainMenuId, selectedCategoryId]);
 
-  // --- Toast Handlers ---
   const addToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, type, text }]);
@@ -117,38 +111,54 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // --- Action Handlers ---
-  const handleSaveTemplate = (data: any, id?: string) => {
+  // --- ACTION HANDLERS (DENGAN FORCE SYNC) ---
+
+  const handleSaveTemplate = async (data: any, id?: string) => {
     const now = new Date().toISOString();
+    let updated;
     if (id) {
-      setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...data, updatedAt: now } : t));
-      addToast('Data Cloud diperbarui.', 'success');
+      updated = templates.map(t => t.id === id ? { ...t, ...data, updatedAt: now } : t);
     } else {
       const newItem = { ...data, id: 'tpl-' + Date.now(), createdAt: now, updatedAt: now };
-      setTemplates(prev => [newItem, ...prev]);
-      addToast('Data baru ditambahkan.', 'success');
+      updated = [newItem, ...templates];
     }
+    setTemplates(updated);
+    await forceSync({ templates: updated });
+    addToast('Data tersimpan aman di Cloud.', 'success');
   };
 
-  const handleDeleteTemplate = (id: string) => {
-    if (window.confirm('Hapus data ini secara permanen dari Cloud?')) {
-      setTemplates(prev => prev.filter(t => t.id !== id));
+  const handleDeleteTemplate = async (id: string) => {
+    if (window.confirm('Hapus data ini selamanya?')) {
+      const updated = templates.filter(t => t.id !== id);
+      setTemplates(updated);
+      await forceSync({ templates: updated });
       addToast('Data terhapus.', 'info');
     }
   };
 
-  const handleAddCategory = (catData: any) => {
+  const handleAddCategory = async (catData: any) => {
     const newCat = { ...catData, id: 'cat-' + Date.now(), order: categories.length + 1 };
-    setCategories(prev => [...prev, newCat]);
-    addToast('Sub-Menu berhasil dibuat.', 'success');
+    const updated = [...categories, newCat];
+    setCategories(updated);
+    await forceSync({ categories: updated });
+    addToast('Sub-Menu tersimpan.', 'success');
   };
 
-  const handleDeleteCategory = (id: string) => {
-    if (window.confirm('Hapus sub-menu ini? Semua data di dalamnya akan terhapus.')) {
-      setCategories(prev => prev.filter(c => c.id !== id));
-      setTemplates(prev => prev.filter(t => t.categoryId !== id));
+  const handleDeleteCategory = async (id: string) => {
+    if (window.confirm('Hapus sub-menu? Semua data di dalamnya ikut terhapus.')) {
+      const updatedCats = categories.filter(c => c.id !== id);
+      const updatedTpls = templates.filter(t => t.categoryId !== id);
+      setCategories(updatedCats);
+      setTemplates(updatedTpls);
+      await forceSync({ categories: updatedCats, templates: updatedTpls });
       addToast('Sub-Menu terhapus.', 'info');
     }
+  };
+
+  // Handler Khusus DASHBOARD RESULT (Pasaran)
+  const handleUpdatePasaranList = async (newList: PasaranItem[]) => {
+    setPasaranList(newList);
+    await forceSync({ pasaranList: newList });
   };
 
   // --- Filter Logic ---
@@ -164,12 +174,13 @@ export default function App() {
     });
   }, [templates, selectedMainMenuId, selectedCategoryId, searchQuery]);
 
+  // Loading Screen
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
         <div className="text-center space-y-6">
           <RotateCw className="w-16 h-16 text-[#ccff00] animate-spin mx-auto" />
-          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">Sinkronisasi Realtime...</h1>
+          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">Menghubungkan Database...</h1>
         </div>
       </div>
     );
@@ -178,18 +189,18 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0b0c14] text-slate-100 font-sans pb-16 relative">
       
-      {/* STATUS BAR CLOUD */}
-      <div className="fixed bottom-5 left-5 z-50 flex items-center gap-2">
+      {/* CLOUD SINKRONISASI INDICATOR */}
+      <div className="fixed bottom-6 left-6 z-[60]">
         {isSaving ? (
-           <div className="bg-black/90 border border-[#ccff00]/60 px-5 py-2.5 rounded-full flex items-center gap-3 text-[11px] font-black text-[#ccff00] shadow-[0_0_20px_rgba(204,255,0,0.3)] animate-pulse">
-              <RotateCw className="w-4 h-4 animate-spin" />
-              <span>MENYIMPAN KE CLOUD...</span>
-           </div>
+          <div className="bg-black/90 border-2 border-[#ccff00] px-5 py-2.5 rounded-2xl flex items-center gap-3 text-[11px] font-black text-[#ccff00] shadow-[0_0_30px_rgba(204,255,0,0.4)] animate-bounce">
+            <RotateCw className="w-4 h-4 animate-spin" />
+            <span>INSTANT CLOUD SAVING...</span>
+          </div>
         ) : (
           currentUser && (
-            <div className="bg-[#ccff00]/10 border border-[#ccff00]/40 px-5 py-2.5 rounded-full flex items-center gap-3 text-[11px] font-black text-[#ccff00] shadow-sm backdrop-blur-md">
+            <div className="bg-[#ccff00]/10 border border-[#ccff00]/30 px-5 py-2.5 rounded-2xl flex items-center gap-3 text-[11px] font-black text-[#ccff00] backdrop-blur-md">
               <CloudCheck className="w-4 h-4" />
-              <span>DATABASE SINKRON</span>
+              <span>DATABASE PERMANEN (SINKRON)</span>
             </div>
           )
         )}
@@ -223,15 +234,15 @@ export default function App() {
           onImportBackup={() => {}}
         />
 
-        <TickerBar tickerText={tickerText} setTickerText={setTickerText} />
+        <TickerBar tickerText={tickerText} setTickerText={(txt) => { setTickerText(txt); forceSync({ tickerText: txt }); }} />
 
         <main className="w-full pt-5 px-6">
           {!currentUser ? (
              <div className="bg-[#121322] border-2 border-amber-500/50 rounded-3xl p-16 text-center space-y-5 shadow-2xl mt-10">
                 <ShieldAlert className="w-12 h-12 text-amber-400 mx-auto" />
-                <h2 className="text-3xl font-black text-amber-400 font-brand uppercase tracking-tighter">AKSES TERBATAS</h2>
-                <p className="text-slate-400 text-sm max-w-md mx-auto">Sistem penyimpanan Cloud hanya tersedia untuk pengguna terdaftar. Silakan login sekarang.</p>
-                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-12 py-4 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg">MASUK SISTEM</button>
+                <h2 className="text-3xl font-black text-amber-400 font-brand uppercase tracking-tighter">DATABASE TERKUNCI</h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">Masuk untuk melihat dan menyimpan data Anda ke Cloud secara permanen.</p>
+                <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500 hover:bg-amber-400 text-black px-12 py-4 rounded-2xl font-black transition-all transform active:scale-95 shadow-lg">LOGIN SEKARANG</button>
              </div>
           ) : (
             <div className="flex flex-col md:flex-row gap-6">
@@ -252,32 +263,36 @@ export default function App() {
 
               <section className="flex-1 space-y-5">
                 {selectedMainMenuId === 'menu-dashboard-result' ? (
-                  <DashboardResultView pasaranList={pasaranList} setPasaranList={(list) => { setPasaranList(list); }} addToast={addToast} />
+                  <DashboardResultView 
+                    pasaranList={pasaranList} 
+                    setPasaranList={handleUpdatePasaranList} 
+                    addToast={addToast} 
+                  />
                 ) : (
                   <>
                     <div className="bg-[#121322] border border-[#23253b] rounded-2xl p-5 flex justify-between items-center shadow-lg">
                       <h2 className="text-2xl font-black text-[#ccff00] uppercase tracking-tight font-brand">
-                        {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'DATABASE KESELURUHAN'}
+                        {selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'RINGKASAN DATA'}
                       </h2>
                       <button onClick={() => { setEditItem(null); setIsAddModalOpen(true); }} className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 px-6 py-3 rounded-xl font-black text-xs shadow-md transition-all active:scale-95 uppercase">
-                        + Tambah Data Ke Cloud
+                        + Tambah Data Baru
                       </button>
                     </div>
 
                     {filteredTemplates.length === 0 ? (
                       <div className="p-24 text-center bg-[#0e0f1d] rounded-3xl border-2 border-dashed border-slate-800 shadow-inner">
                         <FolderOpen className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest italic">Database Kosong. Silakan isi data pertama Anda.</p>
+                        <p className="text-slate-500 font-bold uppercase tracking-widest italic">Belum Ada Data Tersimpan.</p>
                       </div>
                     ) : (
                       <div className="grid gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                         {filteredTemplates.map((item) => (
                           item.mainMenuId === 'menu-gambar' || item.imageUrl ? (
-                            <ImageCard key={item.id} item={item} onCopyImage={(url) => copyImageToClipboard(url)} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={(id) => { setTemplates(prev => prev.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t)); }} copiedId={copiedId} />
+                            <ImageCard key={item.id} item={item} onCopyImage={(url) => copyImageToClipboard(url)} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
                           ) : item.mainMenuId === 'menu-link-bookmark' ? (
-                            <BookmarkCard key={item.id} item={item} onCopyLink={(txt) => navigator.clipboard.writeText(txt)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onUpdateLinks={(id, links) => setTemplates(prev => prev.map(t => t.id === id ? { ...t, links } : t))} copiedId={copiedId} />
+                            <BookmarkCard key={item.id} item={item} onCopyLink={(txt) => navigator.clipboard.writeText(txt)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onUpdateLinks={async (id, links) => { const up = templates.map(t => t.id === id ? { ...t, links } : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
                           ) : (
-                            <TemplateCard key={item.id} item={item} onCopy={(txt) => handleCopyText(txt, item.id)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={(id) => { setTemplates(prev => prev.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t)); }} copiedId={copiedId} />
+                            <TemplateCard key={item.id} item={item} onCopy={(txt) => handleCopyText(txt, item.id)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
                           )
                         ))}
                       </div>
@@ -290,7 +305,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* MODALS */}
       <AddEditModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveTemplate} mainMenus={INITIAL_MAIN_MENUS} categories={categories} editItem={editItem} defaultMainMenuId={selectedMainMenuId} defaultCategoryId={selectedCategoryId} />
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} mainMenus={INITIAL_MAIN_MENUS} categories={categories} selectedMainMenuId={selectedMainMenuId} onAddCategory={handleAddCategory} onUpdateCategory={() => {}} onDeleteCategory={handleDeleteCategory} categoryCounts={{}} />
       <ImageLightboxModal isOpen={!!viewingImageItem} onClose={() => setViewingImageItem(null)} title={viewingImageItem?.title || ''} imageUrl={viewingImageItem?.imageUrl || ''} />
