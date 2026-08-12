@@ -67,8 +67,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [activeAlarm, setActiveAlarm] = useState<AlarmItem | null>(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState<boolean>(true);
   const [showAlarmConfigModal, setShowAlarmConfigModal] = useState<boolean>(false);
-  triggeredAlarmsRef = useRef<Set<string>>(new Set());
-
+  
+  // Perbaikan: Deklarasi useRef hanya satu kali dengan const
+  const triggeredAlarmsRef = useRef<Set<string>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alarmIntervalRef = useRef<any>(null);
 
@@ -89,7 +90,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     if (isMuted) return;
     stopAlarmSound();
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
       const ctx = new AudioContextClass();
       audioCtxRef.current = ctx;
@@ -130,8 +131,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       startAlarmSound();
     }
   };
-
-  const triggeredAlarmsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -677,6 +676,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           letter-spacing: .1em;
           white-space: nowrap;
           padding: 5px 0;
+          margin: 0;
         }
 
         .fire-letter {
@@ -843,7 +843,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <Zap className="w-6 h-6 text-[#ccff00] animate-pulse" />
             </div>
             <div className="flex flex-col">
-              <h1 className="fire-title-container">
+              <div className="fire-title-container">
                 <span className="fire-letter fire">S</span>
                 <span className="fire-letter burn">H</span>
                 <span className="fire-letter burn">O</span>
@@ -852,15 +852,15 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <span className="fire-letter burn">C</span>
                 <span className="fire-letter fire">U</span>
                 <span className="fire-letter burn">T</span>
-                <span className="ml-3"></span>
+                <span className="mx-2"></span>
                 <span className="fire-letter fire">R</span>
                 <span className="fire-letter burn">E</span>
                 <span className="fire-letter burn">S</span>
                 <span className="fire-letter fire">U</span>
                 <span className="fire-letter burn">L</span>
                 <span className="fire-letter burn">T</span>
-              </h1>
-              <p className="text-[10px] font-mono-code text-white/60 font-bold tracking-[0.2em] uppercase mt-[-5px]">
+              </div>
+              <p className="text-[10px] font-mono-code text-white/60 font-bold tracking-[0.2em] uppercase mt-[-2px]">
                 PANEL OTOMATISASI RESULT PASARAN TOGEL
               </p>
             </div>
@@ -1323,5 +1323,3 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     </div>
   );
 };
-
-export default DashboardResultView;
