@@ -53,7 +53,6 @@ export default function App() {
 
   // --- 1. SINKRONISASI AWAL ---
   useEffect(() => {
-    // Timer keamanan: Jika dalam 10 detik tidak ada respon dari Firebase, matikan loading
     const safetyTimer = setTimeout(() => {
       setIsLoading(false);
     }, 10000);
@@ -104,7 +103,7 @@ export default function App() {
         tickerText: overrides.tickerText !== undefined ? overrides.tickerText : tickerText
       });
     } catch (e) {
-      addToast("Gagal menyambung ke Cloud. Cek Koneksi!", "error");
+      console.error("Sync Error:", e);
     } finally {
       setTimeout(() => setIsSaving(false), 800);
     }
@@ -174,9 +173,16 @@ export default function App() {
     }
   };
 
-  const handleUpdatePasaranList = async (newList: PasaranItem[]) => {
-    setPasaranList(newList);
-    await forceSync({ pasaranList: newList });
+  // FIX: Handler Pasaran agar mendukung Functional Update & Auto-Save
+  const handleUpdatePasaranList = async (update: PasaranItem[] | ((prev: PasaranItem[]) => PasaranItem[])) => {
+    let nextList: PasaranItem[];
+    if (typeof update === 'function') {
+      nextList = update(pasaranList);
+    } else {
+      nextList = update;
+    }
+    setPasaranList(nextList);
+    await forceSync({ pasaranList: nextList });
   };
 
   // --- Filter Logic ---
@@ -192,7 +198,6 @@ export default function App() {
     });
   }, [templates, selectedMainMenuId, selectedCategoryId, searchQuery]);
 
-  // Loading Screen
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
@@ -211,8 +216,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0b0c14] text-slate-100 font-sans pb-16 relative">
       
-      {/* BAGIAN INDICATOR SINKRONISASI SUDAH DIHAPUS SESUAI PERMINTAAN */}
-
       <Sidebar
         mainMenus={INITIAL_MAIN_MENUS}
         selectedMainMenuId={selectedMainMenuId}
