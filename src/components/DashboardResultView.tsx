@@ -67,9 +67,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [activeAlarm, setActiveAlarm] = useState<AlarmItem | null>(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState<boolean>(true);
   const [showAlarmConfigModal, setShowAlarmConfigModal] = useState<boolean>(false);
-  
-  // Perbaikan: Deklarasi useRef hanya satu kali dengan const
   const triggeredAlarmsRef = useRef<Set<string>>(new Set());
+
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alarmIntervalRef = useRef<any>(null);
 
@@ -660,6 +659,22 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setP123TerminalInput('');
   };
 
+  // Helper function to render fire letters
+  const renderFireLetters = (text: string, isSubText: boolean = false) => {
+    return text.split('').map((char, index) => {
+      if (char === ' ') return <span key={index} className={isSubText ? "mx-1" : "mx-2"}></span>;
+      const animationClass = index % 2 === 0 ? 'fire' : 'burn';
+      return (
+        <span 
+          key={index} 
+          className={`fire-letter ${animationClass} ${isSubText ? 'fire-letter-sub' : ''}`}
+        >
+          {char}
+        </span>
+      );
+    });
+  };
+
   return (
     <div className="space-y-5 font-sans text-slate-100">
       
@@ -687,6 +702,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           vertical-align: middle;
           letter-spacing: 0.05em;
           display: inline-block;
+        }
+
+        .fire-letter-sub {
+          font-size: 1.1em;
+          letter-spacing: 0.1em;
         }
 
         .fire {
@@ -844,24 +864,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
             <div className="flex flex-col">
               <div className="fire-title-container">
-                <span className="fire-letter fire">S</span>
-                <span className="fire-letter burn">H</span>
-                <span className="fire-letter burn">O</span>
-                <span className="fire-letter fire">R</span>
-                <span className="fire-letter burn">T</span>
-                <span className="fire-letter burn">C</span>
-                <span className="fire-letter fire">U</span>
-                <span className="fire-letter burn">T</span>
-                <span className="mx-2"></span>
-                <span className="fire-letter fire">R</span>
-                <span className="fire-letter burn">E</span>
-                <span className="fire-letter burn">S</span>
-                <span className="fire-letter fire">U</span>
-                <span className="fire-letter burn">L</span>
-                <span className="fire-letter burn">T</span>
+                {renderFireLetters("SHORTCUT RESULT")}
               </div>
-              <p className="text-[10px] font-mono-code text-white/60 font-bold tracking-[0.2em] uppercase mt-[-2px]">
-              </p>
+              <div className="fire-title-container -mt-2">
+                {renderFireLetters("PANEL OTOMATISASI RESULT PASARAN TOGEL", true)}
+              </div>
             </div>
           </div>
 
