@@ -861,7 +861,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <span className="fire-letter burn">T</span>
               </div>
               <p className="text-[10px] font-mono-code text-white/60 font-bold tracking-[0.2em] uppercase mt-[-2px]">
-                PANEL OTOMATISASI RESULT PASARAN TOGEL
               </p>
             </div>
           </div>
