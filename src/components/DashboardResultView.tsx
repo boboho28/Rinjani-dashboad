@@ -704,96 +704,87 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           line-height: 1;
         }
 
-        .fire {
-          animation: fire-animation 1s ease-in-out infinite alternate;
-        }
-
-        .burn {
-          animation: fire-animation .65s ease-in-out infinite alternate;
-        }
+        .fire { animation: fire-animation 1s ease-in-out infinite alternate; }
+        .burn { animation: fire-animation .65s ease-in-out infinite alternate; }
 
         @keyframes fire-animation {
-          0% {
-            text-shadow: 0 0 10px #fefcc9,
-              5px -5px 15px #feec85,
-              -10px -10px 20px #ffae34,
-              10px -20px 25px #ec760c,
-              -10px -30px 30px #cd4606,
-              0 -40px 35px #973716,
-              5px -45px 40px #451b0e;
-          }
-          100% {
-            text-shadow: 0 0 10px #fefcc9,
-              5px -5px 15px #fefcc9,
-              -10px -10px 20px #feec85,
-              11px -21px 30px #ffae34,
-              -11px -29px 25px #ec760c,
-              0 -41px 40px #cd4606,
-              5px -45px 40px #973716;
-          }
+          0% { text-shadow: 0 0 10px #fefcc9, 5px -5px 15px #feec85, -10px -10px 20px #ffae34, 10px -20px 25px #ec760c, -10px -30px 30px #cd4606, 0 -40px 35px #973716, 5px -45px 40px #451b0e; }
+          100% { text-shadow: 0 0 10px #fefcc9, 5px -5px 15px #fefcc9, -10px -10px 20px #feec85, 11px -21px 30px #ffae34, -11px -29px 25px #ec760c, 0 -41px 40px #cd4606, 5px -45px 40px #973716; }
         }
 
-        .link-loader {
-          display: inline-flex;
-          gap: 10px;
+        /* BELL ALARM STYLES */
+        .bell-scope {
+          --_size: min(250px, 40vh);
+          --base-clr: #b7b5b4;
+          --degofrot: 4;
+          font-size: calc(var(--_size) * 0.01);
+          position: relative;
+          width: 80em;
+          height: 80em;
+          margin: 0 auto;
+        }
+
+        .bell-container {
+          width: 80em;
+          height: 80em;
+          position: absolute;
+          transform-origin: 50% -20em;
+          animation: bell-swing 2.5s ease-in-out infinite;
+        }
+
+        @keyframes bell-swing {
+          0%, 100% { transform: rotate(calc(1deg * var(--degofrot))); }
+          50% { transform: rotate(calc(-1deg * var(--degofrot))); }
+        }
+
+        .bell-container * { position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; }
+        
+        .rope { height: 40em; width: 1.5em; translate: 0 -110%; background: repeating-linear-gradient(-70deg, #252525, #888 2%, #3a3a3a 3%); }
+        .bell-top { width: 14%; height: 14%; border-radius: 50%; translate: 0 -28em; background: var(--base-clr); box-shadow: inset -1em -0.5em 2em 0.5em #fff, inset 1em -1em 2em 3em #000, 0 -0.1em 0.4em 0.3em #c6eaffa8; }
+        .bell-base { width: 50%; height: 50%; border-radius: 50%; translate: 0 -24%; background: var(--base-clr); box-shadow: 0 -0.1em 0.4em 0.2em #c6eaffa8; }
+        .bell-base:before, .bell-base:after { content: ""; position: absolute; width: 100%; height: 80%; }
+        .bell-base:before { background-image: radial-gradient(circle at -80% -12%, transparent 50em, var(--base-clr) 50em); translate: -18em 20em; }
+        .bell-base:after { background-image: radial-gradient(circle at -80% -12%, transparent 50.1em, #cacaca 50.3em, var(--base-clr) 50.5em); translate: 18em 20em; transform: rotateY(180deg); }
+        
+        .glow { width: 100%; height: 100%; filter: brightness(2) blur(2em); }
+        .glow::before { content: ""; display: block; width: 100%; height: 80%; translate: 0 6em; background: #fff3; clip-path: polygon(10% 80%, 50% 0, 90% 80%); }
+
+        .bell-btm { width: 88%; height: 18%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
+        .bell-btm2 { width: 74%; height: 12%; border-radius: 50%; translate: 0 24em; background: #fffff6; box-shadow: 0 0 1em 0.6em #ffe9d4, -0.8em 0.2em 2em 1em #cca37f, inset 0 -2em 2em -2em #ffe9d4; }
+        
+        .bell-ring-container { width: 74%; height: 24%; border-radius: 50%; translate: 0 29.2em; overflow: hidden; }
+        .bell-ring { width: 12em; height: 12em; background: #fff; border-radius: 50%; translate: 0 -6em; box-shadow: 0 0.8em 1em -0.3em #f8e1d0, inset 0 100em 0 100em #2c2c2c; }
+
+        .bell-rays::before { content: ""; display: block; width: 100em; height: 100em; position: absolute; left: -21em; top: -77em; border-radius: 100%; background: repeating-conic-gradient(at 50% 50%, #fff2 0%, transparent 0.6%, #fff2 0.8%); animation: rotate-rays 4s linear infinite; }
+        @keyframes rotate-rays { from { rotate: 0deg; } to { rotate: 360deg; } }
+
+        .alarm-button {
+          position: relative;
+          font-size: 18px;
+          font-family: 'Amethysta', serif;
+          background: #ccff00;
+          color: #000;
           cursor: pointer;
-          background: none;
-          border: none;
-          padding: 8px;
-          transition: transform 0.2s;
+          padding: 12px 40px;
+          border-radius: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          box-shadow: 0 0 20px rgba(204, 255, 0, 0.4);
+          transition: all 0.3s;
+          margin-top: 30px;
         }
-        .link-loader:active { transform: scale(0.9); }
-        .link-loader:before,
-        .link-loader:after {
-          content: "";
-          height: 18px;
-          aspect-ratio: 1;
-          border-radius: 50%;
-          background:
-            linear-gradient(#222 0 0) top/100% 40% no-repeat,
-            radial-gradient(farthest-side,#000 95%,#0000) 50%/8px 8px no-repeat
-            #fff;
-          animation: l7 1.5s infinite alternate ease-in;
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-        }
-        @keyframes l7 {
-          0%, 70% {background-size:100% 40%,8px 8px}
-          85% {background-size:100% 120%,8px 8px}
-          100% {background-size:100% 40%,8px 8px}
-        }
+        .alarm-button:hover { transform: scale(1.05); background: #e5ff80; box-shadow: 0 0 30px rgba(204, 255, 0, 0.6); }
 
         .digital-clock-container {
-          width: fit-content;
-          background: #000;
-          padding: 0 10px;
-          font-size: 26px;
-          font-family: 'Courier New', Courier, monospace;
-          color: #fff;
-          font-weight: bold;
-          border-radius: 8px;
-          position: relative;
-          display: inline-block;
-          line-height: 1.2;
-          border: 1px solid #333;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          width: fit-content; background: #000; padding: 0 10px; font-size: 26px; font-family: 'Courier New', Courier, monospace; color: #fff; font-weight: bold; border-radius: 8px; position: relative; display: inline-block; line-height: 1.2; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .digital-clock-container::before {
-          content: attr(data-time);
-          white-space: pre;
-          animation: l8 .5s infinite steps(1);
-        }
-        .digital-clock-container::after {
-          content: "";
-          position: absolute;
-          inset: auto auto 100% 10px;
-          height: 5px;
-          width: 45%;
-          background: linear-gradient(90deg, #ff0000 40%, #0000 0 60%, #444 0);
-          margin-bottom: 2px;
-        }
-        @keyframes l8 {
-          50% { opacity: 0.5; }
-        }
+        .digital-clock-container::before { content: attr(data-time); white-space: pre; animation: l8 .5s infinite steps(1); }
+        .digital-clock-container::after { content: ""; position: absolute; inset: auto auto 100% 10px; height: 5px; width: 45%; background: linear-gradient(90deg, #ff0000 40%, #0000 0 60%, #444 0); margin-bottom: 2px; }
+        @keyframes l8 { 50% { opacity: 0.5; } }
+
+        .link-loader { display: inline-flex; gap: 10px; cursor: pointer; background: none; border: none; padding: 8px; transition: transform 0.2s; }
+        .link-loader:before, .link-loader:after { content: ""; height: 18px; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(#222 0 0) top/100% 40% no-repeat, radial-gradient(farthest-side,#000 95%,#0000) 50%/8px 8px no-repeat #fff; animation: l7 1.5s infinite alternate ease-in; }
+        @keyframes l7 { 0%, 70% {background-size:100% 40%,8px 8px} 85% {background-size:100% 120%,8px 8px} 100% {background-size:100% 40%,8px 8px} }
       `}</style>
       
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
@@ -1085,238 +1076,121 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </table>
       </div>
 
+      {/* MODAL ADD / EDIT PASARAN */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-3xl w-full max-w-lg p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
-            
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-4">
               <h3 className="text-lg font-black text-[#ccff00] font-brand uppercase tracking-wider">
                 {editItem ? `EDIT PASARAN - ${editItem.name}` : 'TAMBAH PASARAN BARU'}
               </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white text-2xl font-bold p-1"
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-2xl font-bold p-1">✕</button>
             </div>
-
             <form onSubmit={handleSavePasaran} className="space-y-4 text-xs font-mono-code">
               <div>
                 <label className="block text-slate-300 font-bold mb-1.5 uppercase">NAMA PASARAN</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. TOTOMACAU SORE"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none focus:border-[#ccff00]"
-                />
+                <input type="text" required placeholder="e.g. TOTOMACAU SORE" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none focus:border-[#ccff00]" />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">SESI SHIFT</label>
-                  <select
-                    value={formSession}
-                    onChange={(e) => setFormSession(e.target.value as any)}
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"
-                  >
-                    <option value="SORE">SORE</option>
-                    <option value="PAGI">PAGI</option>
-                    <option value="MALAM">MALAM</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">STATUS AKSI</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as any)}
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"
-                  >
-                    <option value="BELUM">BELUM</option>
-                    <option value="DONE">DONE</option>
-                    <option value="LIBUR">LIBUR</option>
-                  </select>
-                </div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">SESI SHIFT</label><select value={formSession} onChange={(e) => setFormSession(e.target.value as any)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"><option value="SORE">SORE</option><option value="PAGI">PAGI</option><option value="MALAM">MALAM</option></select></div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">STATUS AKSI</label><select value={formStatus} onChange={(e) => setFormStatus(e.target.value as any)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"><option value="BELUM">BELUM</option><option value="DONE">DONE</option><option value="LIBUR">LIBUR</option></select></div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM TUTUP</label>
-                  <input
-                    type="text"
-                    value={formJamTutup}
-                    onChange={(e) => setFormJamTutup(e.target.value)}
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM RESULT</label>
-                  <input
-                    type="text"
-                    value={formJamResult}
-                    onChange={(e) => setFormJamResult(e.target.value)}
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none"
-                  />
-                </div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM TUTUP</label><input type="text" value={formJamTutup} onChange={(e) => setFormJamTutup(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM RESULT</label><input type="text" value={formJamResult} onChange={(e) => setFormJamResult(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none" /></div>
               </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1.5 uppercase">LINK LIVE DRAW / OFFICIAL (Multi-Link)</label>
-                <textarea
-                  rows={3}
-                  placeholder={"Satu link per baris..."}
-                  value={formLinkUrl}
-                  onChange={(e) => setFormLinkUrl(e.target.value)}
-                  className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]"
-                />
-              </div>
-
+              <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">LINK LIVE DRAW / OFFICIAL (Multi-Link)</label><textarea rows={3} placeholder={"Satu link per baris..."} value={formLinkUrl} onChange={(e) => setFormLinkUrl(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]" /></div>
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P1</label>
-                  <input
-                    type="text"
-                    value={formP1Prize}
-                    onChange={(e) => setFormP1Prize(e.target.value)}
-                    className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2.5 text-[#ccff00] font-bold text-center outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P2</label>
-                  <input
-                    type="text"
-                    value={formP2Prize}
-                    onChange={(e) => setFormP2Prize(e.target.value)}
-                    className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2.5 text-slate-200 font-bold text-center outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P3</label>
-                  <input
-                    type="text"
-                    value={formP3Prize}
-                    onChange={(e) => setFormP3Prize(e.target.value)}
-                    className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2.5 text-slate-200 font-bold text-center outline-none"
-                  />
-                </div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P1</label><input type="text" value={formP1Prize} onChange={(e) => setFormP1Prize(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2.5 text-[#ccff00] font-bold text-center outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P2</label><input type="text" value={formP2Prize} onChange={(e) => setFormP2Prize(e.target.value)} className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2.5 text-slate-200 font-bold text-center outline-none" /></div>
+                <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P3</label><input type="text" value={formP3Prize} onChange={(e) => setFormP3Prize(e.target.value)} className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2.5 text-slate-200 font-bold text-center outline-none" /></div>
               </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#ccff00]/30">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold font-heading uppercase"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-8 py-2.5 bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 rounded-xl font-black uppercase cursor-pointer transition-all shadow-[0_0_15px_rgba(204,255,0,0.5)] font-heading"
-                >
-                  Simpan Pasaran
-                </button>
-              </div>
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#ccff00]/30"><button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold font-heading uppercase">Batal</button><button type="submit" className="px-8 py-2.5 bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 rounded-xl font-black uppercase cursor-pointer transition-all shadow-[0_0_15px_rgba(204,255,0,0.5)] font-heading">Simpan Pasaran</button></div>
             </form>
-
           </div>
         </div>
       )}
 
+      {/* NEW 3D BELL ALARM POPUP */}
       {activeAlarm && (
-        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#141a0d] via-[#0a0d14] to-[#05060a] border-2 border-[#ccff00] rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(204,255,0,0.45)] text-center space-y-6 animate-scale-up">
-            <div className="inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-brand font-black uppercase tracking-widest text-[#ccff00] drop-shadow-[0_0_12px_rgba(204,255,0,0.8)]">
-              <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
-              <span>RINJANI ALARM RESULT</span>
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 overflow-hidden">
+          
+          <div className="bell-scope">
+            <div className="bell-container">
+              <div className="rope"></div>
+              <div className="bell-top"></div>
+              <div className="bell-base"></div>
+              <div className="glow"></div>
+              <div className="bell-btm"></div>
+              <div className="bell-btm2"></div>
+              <div className="bell-ring-container">
+                <div className="bell-ring"></div>
+                <div className="bell-rays"></div>
+              </div>
             </div>
-            <div className="space-y-3">
-              <h2 className="text-3xl sm:text-5xl font-brand font-black text-white tracking-wider uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
-                {activeAlarm.title || `RESULT ${activeAlarm.pasaranName} ${activeAlarm.p1Prize || ''}`.trim()}
+          </div>
+
+          <div className="relative z-10 text-center mt-48 space-y-6 animate-fade-in">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-3 px-6 py-2 bg-black/40 border border-[#ccff00]/40 rounded-full">
+                <span className="text-xl animate-bounce">⏰</span>
+                <span className="text-sm font-black text-[#ccff00] font-brand tracking-[0.2em] uppercase drop-shadow-[0_0_8px_#ccff00]">RINJANI ALARM RESULT</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-6xl font-brand font-black text-white tracking-widest uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                {activeAlarm.pasaranName}
               </h2>
-              <div className="text-lg sm:text-2xl font-brand font-black text-[#ccff00] tracking-widest uppercase drop-shadow-[0_0_12px_rgba(204,255,0,0.6)]">
+              <div className="text-2xl sm:text-3xl font-brand font-black text-[#ccff00] tracking-[0.3em] uppercase italic">
                 JAM RESULT {activeAlarm.jamResult}
               </div>
             </div>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleDismissAlarm}
-                className="bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 text-base sm:text-xl font-heading font-black px-12 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(204,255,0,0.75)] transition-all transform active:scale-95 cursor-pointer uppercase tracking-wider border-2 border-[#e5ff80]"
-              >
-                OK / TUTUP
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={handleDismissAlarm}
+              className="alarm-button"
+            >
+              OK / TUTUP
+            </button>
           </div>
+
+          <div className="grain"></div>
         </div>
       )}
 
+      {/* CONFIG MODAL */}
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-3xl w-full max-w-md p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-4">
-              <div className="flex items-center gap-2">
-                <AlarmClock className="w-6 h-6 text-[#ccff00]" />
-                <h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">KONFIGURASI ALARM</h3>
-              </div>
+              <div className="flex items-center gap-2"><AlarmClock className="w-6 h-6 text-[#ccff00]" /><h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">KONFIGURASI ALARM</h3></div>
               <button type="button" onClick={() => setShowAlarmConfigModal(false)} className="text-slate-400 hover:text-white p-1"><X className="w-6 h-6" /></button>
             </div>
             <div className="space-y-4 text-xs font-mono-code">
-              <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30">
-                <div><div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div></div>
-                <input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-6 h-6 accent-[#ccff00] cursor-pointer" />
-              </div>
-              <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30">
-                <div><div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div></div>
-                <button type="button" onClick={() => setIsMuted(!isMuted)} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span>
-                </button>
-              </div>
-              <div className="pt-2">
-                <button type="button" onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST', jamTutup: '00:00', jamResult: '00:00', session: 'SORE', title: 'UJI ALARM MULUS' }); }} className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading">
-                  <Play className="w-5 h-5 fill-slate-950" /><span>TEST ALARM POPUP</span>
-                </button>
-              </div>
+              <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30"><div><div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div></div><input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-6 h-6 accent-[#ccff00] cursor-pointer" /></div>
+              <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30"><div><div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div></div><button type="button" onClick={() => setIsMuted(!isMuted)} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>{isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span></button></div>
+              <div className="pt-2"><button type="button" onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST ALARM MULUS', jamTutup: '00:00', jamResult: '00:00', session: 'SORE' }); }} className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading"><Play className="w-5 h-5 fill-slate-950" /><span>TEST ALARM POPUP</span></button></div>
             </div>
           </div>
         </div>
       )}
 
+      {/* RESULT POPUP SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-3xl w-full max-md sm:max-w-lg p-6 sm:p-7 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-[#1c223a] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.2)]"><Sparkles className="w-6 h-6 animate-pulse" /></div>
-                <div><h3 className="text-lg font-black text-[#ccff00] font-brand uppercase">HASIL RESULT &amp; SHIO</h3><p className="text-sm text-slate-400 font-medium">{popupPasaran.name}</p></div>
-              </div>
+              <div className="flex items-center gap-3"><div className="p-2.5 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.2)]"><Sparkles className="w-6 h-6 animate-pulse" /></div><div><h3 className="text-lg font-black text-[#ccff00] font-brand uppercase">HASIL RESULT &amp; SHIO</h3><p className="text-sm text-slate-400 font-medium">{popupPasaran.name}</p></div></div>
               <button type="button" onClick={() => setIsResultPopupOpen(false)} className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">RESULT P1</span>
-                <div className="text-2xl sm:text-3xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1.5">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</div>
-              </div>
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span>
-                  <span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span>
-                </div>
-              </div>
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">RESULT P1</span><div className="text-2xl sm:text-3xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1.5">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</div></div>
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span><div className="flex items-center gap-3 mt-1.5"><span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span><span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span></div></div>
             </div>
-            <div className="space-y-2.5">
-              <label className="text-sm font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-2"><FileText className="w-4 h-4 text-[#ccff00]" />Teks Rekapan</label>
-              <textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-4 text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none transition-all" />
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4">
-              <button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button>
-              <button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><Check className="w-5 h-5" /> Tersalin!</> : <><Copy className="w-5 h-5" /> Salin Teks</>}</button>
-            </div>
+            <div className="space-y-2.5"><label className="text-sm font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-2"><FileText className="w-4 h-4 text-[#ccff00]" />Teks Rekapan</label><textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-4 text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none transition-all" /></div>
+            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><Check className="w-5 h-5" /> Tersalin!</> : <><Copy className="w-5 h-5" /> Salin Teks</>}</button></div>
           </div>
         </div>
       )}
