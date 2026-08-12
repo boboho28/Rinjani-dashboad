@@ -67,7 +67,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [activeAlarm, setActiveAlarm] = useState<AlarmItem | null>(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState<boolean>(true);
   const [showAlarmConfigModal, setShowAlarmConfigModal] = useState<boolean>(false);
-  const triggeredAlarmsRef = useRef<Set<string>>(new Set());
+  triggeredAlarmsRef = useRef<Set<string>>(new Set());
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alarmIntervalRef = useRef<any>(null);
@@ -130,6 +130,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       startAlarmSound();
     }
   };
+
+  const triggeredAlarmsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -663,6 +665,59 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     <div className="space-y-5 font-sans text-slate-100">
       
       <style>{`
+        @import url('https://fonts.googleapis.com/css?family=Amethysta');
+        @import url('https://fonts.googleapis.com/css?family=Caesar+Dressing');
+
+        .fire-title-container {
+          background-image: -webkit-linear-gradient(top, #111, #0c0c0c);
+          font-family: 'Amethysta', serif;
+          text-align: left;
+          line-height: 1em;
+          text-transform: uppercase;
+          letter-spacing: .1em;
+          white-space: nowrap;
+          padding: 5px 0;
+        }
+
+        .fire-letter {
+          color: #000;
+          font-family: 'Caesar Dressing', cursive;
+          font-size: 2.2em;
+          text-transform: lowercase;
+          vertical-align: middle;
+          letter-spacing: 0.05em;
+          display: inline-block;
+        }
+
+        .fire {
+          animation: fire-animation 1s ease-in-out infinite alternate;
+        }
+
+        .burn {
+          animation: fire-animation .65s ease-in-out infinite alternate;
+        }
+
+        @keyframes fire-animation {
+          0% {
+            text-shadow: 0 0 10px #fefcc9,
+              5px -5px 15px #feec85,
+              -10px -10px 20px #ffae34,
+              10px -20px 25px #ec760c,
+              -10px -30px 30px #cd4606,
+              0 -40px 35px #973716,
+              5px -45px 40px #451b0e;
+          }
+          100% {
+            text-shadow: 0 0 10px #fefcc9,
+              5px -5px 15px #fefcc9,
+              -10px -10px 20px #feec85,
+              11px -21px 30px #ffae34,
+              -11px -29px 25px #ec760c,
+              0 -41px 40px #cd4606,
+              5px -45px 40px #973716;
+          }
+        }
+
         .link-loader {
           display: inline-flex;
           gap: 10px;
@@ -783,15 +838,29 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-2.5 pt-1">
-            <div className="p-2 bg-[#ccff00]/10 border border-[#ccff00] rounded-xl shadow-[0_0_12px_rgba(204,255,0,0.4)]">
-              <Zap className="w-5 h-5 text-[#ccff00] animate-pulse" />
+          <div className="flex items-center gap-4 pt-1">
+            <div className="p-2.5 bg-black border border-[#ccff00] rounded-2xl shadow-[0_0_15px_rgba(204,255,0,0.4)]">
+              <Zap className="w-6 h-6 text-[#ccff00] animate-pulse" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-[#ccff00] font-brand tracking-widest uppercase drop-shadow-[0_0_12px_rgba(204,255,0,0.5)]">
-                SHORTCUT RESULT
+            <div className="flex flex-col">
+              <h1 className="fire-title-container">
+                <span className="fire-letter fire">S</span>
+                <span className="fire-letter burn">H</span>
+                <span className="fire-letter burn">O</span>
+                <span className="fire-letter fire">R</span>
+                <span className="fire-letter burn">T</span>
+                <span className="fire-letter burn">C</span>
+                <span className="fire-letter fire">U</span>
+                <span className="fire-letter burn">T</span>
+                <span className="ml-3"></span>
+                <span className="fire-letter fire">R</span>
+                <span className="fire-letter burn">E</span>
+                <span className="fire-letter burn">S</span>
+                <span className="fire-letter fire">U</span>
+                <span className="fire-letter burn">L</span>
+                <span className="fire-letter burn">T</span>
               </h1>
-              <p className="text-[10px] font-mono-code text-[#ccff00]/80 font-semibold tracking-wide">
+              <p className="text-[10px] font-mono-code text-white/60 font-bold tracking-[0.2em] uppercase mt-[-5px]">
                 PANEL OTOMATISASI RESULT PASARAN TOGEL
               </p>
             </div>
@@ -950,14 +1019,12 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     </span>
                   </td>
 
-                  {/* UPDATE P2: Styling disamakan dengan P1 */}
                   <td className="py-2.5 px-3 text-center">
                     <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p2Prize || '-'}
                     </span>
                   </td>
 
-                  {/* UPDATE P3: Styling disamakan dengan P1 */}
                   <td className="py-2.5 px-3 text-center">
                     <span className="font-mono-code font-black italic tracking-widest text-[16px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
                       {item.p3Prize || '-'}
@@ -1256,3 +1323,5 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     </div>
   );
 };
+
+export default DashboardResultView;
