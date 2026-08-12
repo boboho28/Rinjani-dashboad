@@ -51,7 +51,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // --- 1. SINKRONISASI AWAL DENGAN FIX LOADING ---
+  // --- 1. SINKRONISASI AWAL ---
   useEffect(() => {
     // Timer keamanan: Jika dalam 10 detik tidak ada respon dari Firebase, matikan loading
     const safetyTimer = setTimeout(() => {
@@ -60,7 +60,6 @@ export default function App() {
 
     const unsubAuth = subscribeAuthState((profile) => {
       setCurrentUser(profile);
-      // Jika user tidak ditemukan (logout), matikan loading agar tombol login muncul
       if (!profile) {
         setIsLoading(false);
       }
@@ -74,7 +73,6 @@ export default function App() {
         setPasaranList(cloudData.pasaranList || []);
         setTickerText(cloudData.tickerText || "RINJANI DASHBOARD SYSTEM");
       }
-      // Data berhasil diterima atau data kosong, matikan loading
       setIsLoading(false);
       setHasInitialLoaded(true);
       clearTimeout(safetyTimer);
@@ -194,7 +192,7 @@ export default function App() {
     });
   }, [templates, selectedMainMenuId, selectedCategoryId, searchQuery]);
 
-  // --- LOADING SCREEN ---
+  // Loading Screen
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
@@ -203,9 +201,7 @@ export default function App() {
             <RotateCw className="w-24 h-24 text-[#ccff00] animate-spin opacity-20" />
             <RotateCw className="w-24 h-24 text-[#ccff00] animate-spin absolute top-0 left-0" style={{ animationDuration: '3s' }} />
           </div>
-          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">
-            MENGHUBUNGKAN DATABASE...
-          </h1>
+          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">Menghubungkan Database...</h1>
           <p className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.3em]">Rinjani Cloud System v2.0</p>
         </div>
       </div>
@@ -215,22 +211,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0b0c14] text-slate-100 font-sans pb-16 relative">
       
-      {/* CLOUD SINKRONISASI INDICATOR */}
-      <div className="fixed bottom-6 left-6 z-[60]">
-        {isSaving ? (
-          <div className="bg-black/90 border-2 border-[#ccff00] px-5 py-2.5 rounded-2xl flex items-center gap-3 text-[11px] font-black text-[#ccff00] shadow-[0_0_30px_rgba(204,255,0,0.4)] animate-bounce">
-            <RotateCw className="w-4 h-4 animate-spin" />
-            <span>INSTANT CLOUD SAVING...</span>
-          </div>
-        ) : (
-          currentUser && (
-            <div className="bg-[#ccff00]/10 border border-[#ccff00]/30 px-5 py-2.5 rounded-2xl flex items-center gap-3 text-[11px] font-black text-[#ccff00] backdrop-blur-md">
-              <CloudCheck className="w-4 h-4" />
-              <span>DATABASE PERMANEN (SINKRON)</span>
-            </div>
-          )
-        )}
-      </div>
+      {/* BAGIAN INDICATOR SINKRONISASI SUDAH DIHAPUS SESUAI PERMINTAAN */}
 
       <Sidebar
         mainMenus={INITIAL_MAIN_MENUS}
