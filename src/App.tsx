@@ -51,9 +51,20 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // --- 1. SINKRONISASI AWAL ---
+  // --- 1. SINKRONISASI AWAL DENGAN FIX LOADING ---
   useEffect(() => {
-    const unsubAuth = subscribeAuthState((profile) => setCurrentUser(profile));
+    // Timer keamanan: Jika dalam 10 detik tidak ada respon dari Firebase, matikan loading
+    const safetyTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 10000);
+
+    const unsubAuth = subscribeAuthState((profile) => {
+      setCurrentUser(profile);
+      // Jika user tidak ditemukan (logout), matikan loading agar tombol login muncul
+      if (!profile) {
+        setIsLoading(false);
+      }
+    });
     
     const unsubData = subscribeToAppData((cloudData) => {
       if (cloudData) {
@@ -63,15 +74,20 @@ export default function App() {
         setPasaranList(cloudData.pasaranList || []);
         setTickerText(cloudData.tickerText || "RINJANI DASHBOARD SYSTEM");
       }
+      // Data berhasil diterima atau data kosong, matikan loading
       setIsLoading(false);
       setHasInitialLoaded(true);
+      clearTimeout(safetyTimer);
     });
 
-    return () => { unsubAuth(); unsubData(); };
+    return () => { 
+      unsubAuth(); 
+      unsubData(); 
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   // --- 2. FUNGSI SIMPAN PAKSA (FORCE SYNC) ---
-  // Fungsi ini dipanggil manual setiap ada aksi ADD / EDIT / DELETE
   const forceSync = async (overrides: Partial<{
     categories: any[], 
     templates: any[], 
@@ -111,7 +127,12 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // --- ACTION HANDLERS (DENGAN FORCE SYNC) ---
+  const handleCopyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    addToast('Teks berhasil disalin!', 'success');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleSaveTemplate = async (data: any, id?: string) => {
     const now = new Date().toISOString();
@@ -155,7 +176,6 @@ export default function App() {
     }
   };
 
-  // Handler Khusus DASHBOARD RESULT (Pasaran)
   const handleUpdatePasaranList = async (newList: PasaranItem[]) => {
     setPasaranList(newList);
     await forceSync({ pasaranList: newList });
@@ -174,13 +194,19 @@ export default function App() {
     });
   }, [templates, selectedMainMenuId, selectedCategoryId, searchQuery]);
 
-  // Loading Screen
+  // --- LOADING SCREEN ---
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0b0c14] flex items-center justify-center">
         <div className="text-center space-y-6">
-          <RotateCw className="w-16 h-16 text-[#ccff00] animate-spin mx-auto" />
-          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">Menghubungkan Database...</h1>
+          <div className="relative w-24 h-24 mx-auto">
+            <RotateCw className="w-24 h-24 text-[#ccff00] animate-spin opacity-20" />
+            <RotateCw className="w-24 h-24 text-[#ccff00] animate-spin absolute top-0 left-0" style={{ animationDuration: '3s' }} />
+          </div>
+          <h1 className="text-[#ccff00] font-brand font-black text-xl tracking-widest animate-pulse uppercase">
+            MENGHUBUNGKAN DATABASE...
+          </h1>
+          <p className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.3em]">Rinjani Cloud System v2.0</p>
         </div>
       </div>
     );
