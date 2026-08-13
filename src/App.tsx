@@ -173,7 +173,6 @@ export default function App() {
     }
   };
 
-  // FIX: Handler Pasaran agar mendukung Functional Update & Auto-Save
   const handleUpdatePasaranList = async (update: PasaranItem[] | ((prev: PasaranItem[]) => PasaranItem[])) => {
     let nextList: PasaranItem[];
     if (typeof update === 'function') {
@@ -295,12 +294,6 @@ export default function App() {
                         <p className="text-slate-500 font-bold uppercase tracking-widest italic">Belum Ada Data Tersimpan.</p>
                       </div>
                     ) : (
-                      /* 
-                         LOGIKA GRID UPDATE:
-                         Jika sidebar ciut: xl:grid-cols-5 (5 box ke samping).
-                         Jika sidebar lebar: xl:grid-cols-4 (4 box ke samping, box ke-5 otomatis turun).
-                         Khusus menu Link dibatasi 3/2 kolom agar tidak pecah/hancur kodenya.
-                      */
                       <div className={`grid gap-5 grid-cols-1 md:grid-cols-2 ${
                         selectedMainMenuId === 'menu-link-bookmark' 
                           ? (isSidebarCollapsed ? 'xl:grid-cols-3 lg:grid-cols-2' : 'xl:grid-cols-2 lg:grid-cols-2') 
@@ -308,11 +301,36 @@ export default function App() {
                       }`}>
                         {filteredTemplates.map((item) => (
                           item.mainMenuId === 'menu-gambar' || item.imageUrl ? (
-                            <ImageCard key={item.id} item={item} onCopyImage={(url) => copyImageToClipboard(url)} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
+                            <ImageCard 
+                              key={item.id} 
+                              item={item} 
+                              onCopyImage={(url) => copyImageToClipboard(url)} 
+                              onViewImage={setViewingImageItem} 
+                              onEdit={(item) => { setEditItem(item); setIsAddModalOpen(true); }} 
+                              onDelete={handleDeleteTemplate} 
+                              onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} 
+                              copiedId={copiedId} 
+                            />
                           ) : item.mainMenuId === 'menu-link-bookmark' ? (
-                            <BookmarkCard key={item.id} item={item} onCopyLink={(txt) => navigator.clipboard.writeText(txt)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onUpdateLinks={async (id, links) => { const up = templates.map(t => t.id === id ? { ...t, links } : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
+                            <BookmarkCard 
+                              key={item.id} 
+                              item={item} 
+                              onCopyLink={(txt) => navigator.clipboard.writeText(txt)} 
+                              onEdit={(item) => { setEditItem(item); setIsAddModalOpen(true); }} 
+                              onDelete={handleDeleteTemplate} 
+                              onUpdateLinks={async (id, links) => { const up = templates.map(t => t.id === id ? { ...t, links } : t); setTemplates(up); await forceSync({templates: up}); }} 
+                              copiedId={copiedId} 
+                            />
                           ) : (
-                            <TemplateCard key={item.id} item={item} onCopy={(txt) => handleCopyText(txt, item.id)} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
+                            <TemplateCard 
+                              key={item.id} 
+                              item={item} 
+                              onCopy={(txt) => handleCopyText(txt, item.id)} 
+                              onEdit={(item) => { setEditItem(item); setIsAddModalOpen(true); }} 
+                              onDelete={handleDeleteTemplate} 
+                              onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} 
+                              copiedId={copiedId} 
+                            />
                           )
                         ))}
                       </div>
@@ -325,7 +343,7 @@ export default function App() {
         </main>
       </div>
 
-      <AddEditModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveTemplate} mainMenus={INITIAL_MAIN_MENUS} categories={categories} editItem={editItem} defaultMainMenuId={selectedMainMenuId} defaultCategoryId={selectedCategoryId} />
+      <AddEditModal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setEditItem(null); }} onSave={handleSaveTemplate} mainMenus={INITIAL_MAIN_MENUS} categories={categories} editItem={editItem} defaultMainMenuId={selectedMainMenuId} defaultCategoryId={selectedCategoryId} />
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} mainMenus={INITIAL_MAIN_MENUS} categories={categories} selectedMainMenuId={selectedMainMenuId} onAddCategory={handleAddCategory} onUpdateCategory={() => {}} onDeleteCategory={handleDeleteCategory} categoryCounts={{}} />
       <ImageLightboxModal isOpen={!!viewingImageItem} onClose={() => setViewingImageItem(null)} title={viewingImageItem?.title || ''} imageUrl={viewingImageItem?.imageUrl || ''} />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} currentUser={currentUser} onSuccessToast={(msg) => addToast(msg, 'success')} />
