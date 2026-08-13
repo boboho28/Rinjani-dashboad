@@ -750,7 +750,13 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         .glow::before { content: ""; display: block; width: 100%; height: 80%; translate: 0 6em; background: #fff3; clip-path: polygon(10% 80%, 50% 0, 90% 80%); }
 
         .bell-btm { width: 88%; height: 18%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
-        .bell-btm2 { width: 74%; height: 12%; border-radius: 50%; translate: 0 24em; background: #fffff6; box-shadow: 0 0 1em 0.6em #ffe9d4, -0.8em 0.2em 2em 1em #cca37f, inset 0 -2em 2em -2em #ffe9d4; }
+        
+        /* UPDATED: LIGHT/GLOW ON BELL */
+        .bell-btm2 { 
+            width: 74%; height: 12%; border-radius: 50%; translate: 0 24em; 
+            background: #fffff6; 
+            box-shadow: 0 0 2em 0.8em #ffe9d4, 0 10em 25em 8em rgba(255, 233, 212, 0.5), inset 0 -2em 2em -2em #ffe9d4; 
+        }
         
         .bell-ring-container { width: 74%; height: 24%; border-radius: 50%; translate: 0 29.2em; overflow: hidden; }
         .bell-ring { width: 12em; height: 12em; background: #fff; border-radius: 50%; translate: 0 -6em; box-shadow: 0 0.8em 1em -0.3em #f8e1d0, inset 0 100em 0 100em #2c2c2c; }
@@ -1110,11 +1116,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* NEW 3D BELL ALARM POPUP */}
+      {/* NEW 3D BELL ALARM POPUP WITH BACKGROUND */}
       {activeAlarm && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 overflow-hidden">
-          
-          <div className="bell-scope">
+        <div 
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 overflow-hidden bg-cover bg-center"
+            style={{ backgroundImage: "url('https://i.pinimg.com/736x/f3/30/39/f33039034dcce22a500a206f6e7ed286.jpg')" }}
+        >
+          {/* OVERLAY HITAM TRANSPARAN AGAR TEKS TETAP TERLIHAT JELAS */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+
+          <div className="bell-scope scale-110 sm:scale-125 mb-12">
             <div className="bell-container">
               <div className="rope"></div>
               <div className="bell-top"></div>
@@ -1129,7 +1140,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
           </div>
 
-          <div className="relative z-10 text-center mt-48 space-y-6 animate-fade-in">
+          <div className="relative z-10 text-center mt-32 space-y-6 animate-fade-in">
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-3 px-6 py-2 bg-black/40 border border-[#ccff00]/40 rounded-full">
                 <span className="text-xl animate-bounce">⏰</span>
