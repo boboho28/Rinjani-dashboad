@@ -295,7 +295,12 @@ export default function App() {
                         <p className="text-slate-500 font-bold uppercase tracking-widest italic">Belum Ada Data Tersimpan.</p>
                       </div>
                     ) : (
-                      /* PERBAIKAN LOGIKA GRID: Membedakan kolom untuk Menu Link agar tidak hancur */
+                      /* 
+                         LOGIKA GRID UPDATE:
+                         Jika sidebar ciut: xl:grid-cols-5 (5 box ke samping).
+                         Jika sidebar lebar: xl:grid-cols-4 (4 box ke samping, box ke-5 otomatis turun).
+                         Khusus menu Link dibatasi 3/2 kolom agar tidak pecah/hancur kodenya.
+                      */
                       <div className={`grid gap-5 grid-cols-1 md:grid-cols-2 ${
                         selectedMainMenuId === 'menu-link-bookmark' 
                           ? (isSidebarCollapsed ? 'xl:grid-cols-3 lg:grid-cols-2' : 'xl:grid-cols-2 lg:grid-cols-2') 
