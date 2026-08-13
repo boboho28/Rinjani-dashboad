@@ -51,6 +51,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const originalTitle = useRef(document.title);
+  const titleIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     localStorage.setItem('rinjani_last_result_session', selectedSession);
@@ -63,13 +65,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // --- REQUEST NOTIFICATION PERMISSION ON MOUNT ---
+  // --- REQUEST NOTIFICATION PERMISSION ---
   useEffect(() => {
     if ("Notification" in window) {
       if (Notification.permission === "default") {
         Notification.requestPermission();
       }
     }
+    return () => {
+        if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
+    };
   }, []);
 
   // --- ALARM SYSTEM STATE & LOGIC ---
@@ -92,6 +97,13 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       } catch (e) {}
       audioCtxRef.current = null;
     }
+    
+    // Stop Title Flashing
+    if (titleIntervalRef.current) {
+        clearInterval(titleIntervalRef.current);
+        titleIntervalRef.current = null;
+    }
+    document.title = originalTitle.current;
   };
 
   const startAlarmSound = () => {
@@ -134,30 +146,41 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const triggerAlarm = (alarmData: AlarmItem) => {
-    // 1. Tampilkan Popup Modal Internal
+    // 1. Set Active Alarm (Show Popup)
     setActiveAlarm(alarmData);
     
-    // 2. Mainkan Suara
+    // 2. Start Sound
     if (!isMuted) {
       startAlarmSound();
     }
 
-    // 3. Kirim System Notification (Muncul di tab manapun / di luar browser)
+    // 3. Tab Flashing Logic (Supaya Tab Berkedip di Browser)
+    if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
+    let isAlertTitle = false;
+    titleIntervalRef.current = setInterval(() => {
+        document.title = isAlertTitle 
+            ? `⚠️ RESULT ${alarmData.pasaranName} ⚠️` 
+            : `🔔 BANGUN!! ${alarmData.jamResult}`;
+        isAlertTitle = !isAlertTitle;
+    }, 1000);
+
+    // 4. Desktop/System Notification
     if ("Notification" in window && Notification.permission === "granted" && isAlarmEnabled) {
-      const notificationTitle = alarmData.title || `ALARM RESULT: ${alarmData.pasaranName}`;
+      const notificationTitle = `⚠️ RESULT NOW: ${alarmData.pasaranName}`;
       const notificationOptions = {
-        body: `Waktunya Result! Jam: ${alarmData.jamResult}\nKlik untuk melihat detail.`,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png', // Icon lonceng
-        tag: 'rinjani-result-alarm', // Menghindari duplikasi notifikasi yang sama
-        requireInteraction: true // Notifikasi tidak akan hilang sampai diklik/ditutup user
+        body: `Pasaran ${alarmData.pasaranName} sudah waktunya result (${alarmData.jamResult}). Klik di sini untuk memproses!`,
+        icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png',
+        tag: 'rinjani-alarm',
+        requireInteraction: true,
+        silent: false 
       };
 
       const n = new Notification(notificationTitle, notificationOptions);
       
-      // Jika notifikasi diklik, arahkan user kembali ke tab ini
-      n.onclick = (e) => {
-        e.preventDefault();
-        window.focus(); 
+      // FUNSI PALING PENTING: Pindah Fokus ke Tab saat Notifikasi diklik
+      n.onclick = () => {
+        window.focus(); // Mengembalikan fokus ke browser/tab ini
+        window.parent.focus(); 
         n.close();
       };
     }
@@ -198,7 +221,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
           const diffSecs = tutupTotalSecs - nowTotalSecs;
 
-          // Trigger saat waktu pas (toleransi 3 detik)
           if (diffSecs <= 0 && diffSecs >= -3) {
             const triggerKey = `${item.id}-${todayDateStr}-${item.jamTutup}`;
             if (!triggeredAlarmsRef.current.has(triggerKey)) {
