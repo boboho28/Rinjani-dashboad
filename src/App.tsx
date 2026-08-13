@@ -295,8 +295,12 @@ export default function App() {
                         <p className="text-slate-500 font-bold uppercase tracking-widest italic">Belum Ada Data Tersimpan.</p>
                       </div>
                     ) : (
-                      /* BAGIAN INI TELAH DIUPDATE: Grid otomatis berubah kolom berdasarkan state Sidebar */
-                      <div className={`grid gap-5 grid-cols-1 md:grid-cols-2 ${isSidebarCollapsed ? 'xl:grid-cols-5 lg:grid-cols-4' : 'xl:grid-cols-4 lg:grid-cols-3'}`}>
+                      /* PERBAIKAN LOGIKA GRID: Membedakan kolom untuk Menu Link agar tidak hancur */
+                      <div className={`grid gap-5 grid-cols-1 md:grid-cols-2 ${
+                        selectedMainMenuId === 'menu-link-bookmark' 
+                          ? (isSidebarCollapsed ? 'xl:grid-cols-3 lg:grid-cols-2' : 'xl:grid-cols-2 lg:grid-cols-2') 
+                          : (isSidebarCollapsed ? 'xl:grid-cols-5 lg:grid-cols-4' : 'xl:grid-cols-4 lg:grid-cols-3')
+                      }`}>
                         {filteredTemplates.map((item) => (
                           item.mainMenuId === 'menu-gambar' || item.imageUrl ? (
                             <ImageCard key={item.id} item={item} onCopyImage={(url) => copyImageToClipboard(url)} onViewImage={setViewingImageItem} onEdit={setEditItem} onDelete={handleDeleteTemplate} onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} copiedId={copiedId} />
