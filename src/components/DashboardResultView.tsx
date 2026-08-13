@@ -63,6 +63,15 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // --- REQUEST NOTIFICATION PERMISSION ON MOUNT ---
+  useEffect(() => {
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
   // --- ALARM SYSTEM STATE & LOGIC ---
   const [activeAlarm, setActiveAlarm] = useState<AlarmItem | null>(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState<boolean>(true);
@@ -125,9 +134,32 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const triggerAlarm = (alarmData: AlarmItem) => {
+    // 1. Tampilkan Popup Modal Internal
     setActiveAlarm(alarmData);
+    
+    // 2. Mainkan Suara
     if (!isMuted) {
       startAlarmSound();
+    }
+
+    // 3. Kirim System Notification (Muncul di tab manapun / di luar browser)
+    if ("Notification" in window && Notification.permission === "granted" && isAlarmEnabled) {
+      const notificationTitle = alarmData.title || `ALARM RESULT: ${alarmData.pasaranName}`;
+      const notificationOptions = {
+        body: `Waktunya Result! Jam: ${alarmData.jamResult}\nKlik untuk melihat detail.`,
+        icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png', // Icon lonceng
+        tag: 'rinjani-result-alarm', // Menghindari duplikasi notifikasi yang sama
+        requireInteraction: true // Notifikasi tidak akan hilang sampai diklik/ditutup user
+      };
+
+      const n = new Notification(notificationTitle, notificationOptions);
+      
+      // Jika notifikasi diklik, arahkan user kembali ke tab ini
+      n.onclick = (e) => {
+        e.preventDefault();
+        window.focus(); 
+        n.close();
+      };
     }
   };
 
@@ -166,6 +198,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
           const diffSecs = tutupTotalSecs - nowTotalSecs;
 
+          // Trigger saat waktu pas (toleransi 3 detik)
           if (diffSecs <= 0 && diffSecs >= -3) {
             const triggerKey = `${item.id}-${todayDateStr}-${item.jamTutup}`;
             if (!triggeredAlarmsRef.current.has(triggerKey)) {
@@ -659,7 +692,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     setP123TerminalInput('');
   };
 
-  // Helper function to render fire letters ONLY for the Title
   const renderFireLetters = (text: string, size: string = "2.4em") => {
     return text.split('').map((char, index) => {
       if (char === ' ') return <span key={index} className="mx-2"></span>;
@@ -751,7 +783,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
         .bell-btm { width: 88%; height: 18%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
         
-        /* UPDATED: LIGHT/GLOW ON BELL */
+        /* LIGHT/GLOW ON BELL */
         .bell-btm2 { 
             width: 74%; height: 12%; border-radius: 50%; translate: 0 24em; 
             background: #fffff6; 
@@ -1122,7 +1154,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 overflow-hidden bg-cover bg-center"
             style={{ backgroundImage: "url('https://i.pinimg.com/736x/f3/30/39/f33039034dcce22a500a206f6e7ed286.jpg')" }}
         >
-          {/* OVERLAY HITAM TRANSPARAN AGAR TEKS TETAP TERLIHAT JELAS */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
 
           <div className="bell-scope scale-110 sm:scale-125 mb-12">
