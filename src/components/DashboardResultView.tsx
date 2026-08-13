@@ -53,6 +53,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const originalTitle = useRef(document.title);
   const titleIntervalRef = useRef<any>(null);
+  const popupWindowRef = useRef<Window | null>(null);
 
   useEffect(() => {
     localStorage.setItem('rinjani_last_result_session', selectedSession);
@@ -65,7 +66,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // --- REQUEST NOTIFICATION PERMISSION ---
+  // --- REQUEST PERMISSIONS ON MOUNT ---
   useEffect(() => {
     if ("Notification" in window) {
       if (Notification.permission === "default") {
@@ -104,6 +105,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         titleIntervalRef.current = null;
     }
     document.title = originalTitle.current;
+
+    // Close external popup window if any
+    if (popupWindowRef.current && !popupWindowRef.current.closed) {
+        popupWindowRef.current.close();
+    }
   };
 
   const startAlarmSound = () => {
@@ -146,43 +152,80 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const triggerAlarm = (alarmData: AlarmItem) => {
-    // 1. Set Active Alarm (Show Popup)
+    // 1. Tampilkan Popup Modal Internal
     setActiveAlarm(alarmData);
     
-    // 2. Start Sound
+    // 2. Mulai Suara
     if (!isMuted) {
       startAlarmSound();
     }
 
-    // 3. Tab Flashing Logic (Supaya Tab Berkedip di Browser)
+    // 3. Tab Berkedip (Agar terlihat di list tab atas)
     if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
     let isAlertTitle = false;
     titleIntervalRef.current = setInterval(() => {
         document.title = isAlertTitle 
             ? `⚠️ RESULT ${alarmData.pasaranName} ⚠️` 
-            : `🔔 BANGUN!! ${alarmData.jamResult}`;
+            : `🔔 CEK RESULT SEKARANG!!`;
         isAlertTitle = !isAlertTitle;
     }, 1000);
 
-    // 4. Desktop/System Notification
+    // 4. Munculkan System Notification (Yang bisa diklik dari mana saja)
     if ("Notification" in window && Notification.permission === "granted" && isAlarmEnabled) {
-      const notificationTitle = `⚠️ RESULT NOW: ${alarmData.pasaranName}`;
-      const notificationOptions = {
-        body: `Pasaran ${alarmData.pasaranName} sudah waktunya result (${alarmData.jamResult}). Klik di sini untuk memproses!`,
+      const notificationTitle = `⚠️ RINJANI ALARM: ${alarmData.pasaranName}`;
+      const n = new Notification(notificationTitle, {
+        body: `Waktunya Result ${alarmData.pasaranName} jam ${alarmData.jamResult}. Klik untuk proses!`,
         icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png',
         tag: 'rinjani-alarm',
-        requireInteraction: true,
-        silent: false 
-      };
-
-      const n = new Notification(notificationTitle, notificationOptions);
+        requireInteraction: true
+      });
       
-      // FUNSI PALING PENTING: Pindah Fokus ke Tab saat Notifikasi diklik
       n.onclick = () => {
-        window.focus(); // Mengembalikan fokus ke browser/tab ini
-        window.parent.focus(); 
+        window.focus(); // Mengembalikan layar ke tab dashboard ini
         n.close();
       };
+    }
+
+    // 5. TRY POP-OUT WINDOW (Solusi agar "Melayang" terpisah)
+    // Catatan: Pastikan browser tidak memblokir Popup untuk situs ini
+    try {
+        const width = 450;
+        const height = 550;
+        const left = (window.screen.width / 2) - (width / 2);
+        const top = (window.screen.height / 2) - (height / 2);
+        
+        const popup = window.open("", "RinjaniAlarmPopup", `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no`);
+        
+        if (popup) {
+            popupWindowRef.current = popup;
+            popup.document.write(`
+                <html>
+                <head>
+                    <title>RESULT ${alarmData.pasaranName}</title>
+                    <style>
+                        body { background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+                        .bell { font-size: 80px; animation: swing 1s ease-in-out infinite alternate; margin-bottom: 20px; }
+                        @keyframes swing { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+                        h1 { color: #ccff00; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+                        h2 { font-size: 18px; color: #fff; margin: 10px 0; }
+                        button { background: #ccff00; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 8px; margin-top: 20px; text-transform: uppercase; }
+                    </style>
+                </head>
+                <body>
+                    <div class="bell">🔔</div>
+                    <h1>${alarmData.pasaranName}</h1>
+                    <h2>JAM RESULT ${alarmData.jamResult}</h2>
+                    <button onclick="window.opener.focus(); window.close();">BUKA DASHBOARD</button>
+                    <script>
+                        // Sinkronisasi tutup jika di dashboard ditutup
+                        setInterval(() => { if(!window.opener || window.opener.closed) window.close(); }, 1000);
+                    </script>
+                </body>
+                </html>
+            `);
+        }
+    } catch (e) {
+        console.warn("External popup blocked by browser settings.");
     }
   };
 
