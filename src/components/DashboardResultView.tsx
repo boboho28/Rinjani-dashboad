@@ -855,7 +855,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 {renderFireLetters("SHORTCUT RESULT")}
               </div>
               <p className="text-[10px] font-mono-code text-white/70 font-bold tracking-[0.2em] uppercase mt-0.5">
-                PANEL OTOMATISASI RESULT PASARAN TOGEL
               </p>
             </div>
           </div>
