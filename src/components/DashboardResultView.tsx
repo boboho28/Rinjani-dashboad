@@ -284,7 +284,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     };
   }, [activeAlarm]);
 
-  // --- PERBAIKAN LOGIKA ALARM ---
   useEffect(() => {
     if (!isAlarmEnabled) return;
 
@@ -296,7 +295,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 
     pasaranList.forEach((item) => {
-      // Trigger alarm jika status masih BELUM dan waktu tutup sudah tercapai/terlewati
       if (item.status === 'BELUM' && (!item.p1Prize || item.p1Prize === '-')) {
         const matchTutup = item.jamTutup.match(/(\d{1,2}):(\d{2})/);
         if (matchTutup) {
@@ -305,8 +303,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
           const diffSecs = tutupTotalSecs - nowTotalSecs;
 
-          // Perbaikan: Gunakan range yang lebih lebar (60 detik) untuk memastikan trigger tertangkap
-          // dan pastikan hanya trigger 1x per pasaran per hari menggunakan triggerKey
           if (diffSecs <= 0 && diffSecs >= -60) {
             const triggerKey = `${item.id}-${todayDateStr}-${item.jamTutup}`;
             if (!triggeredAlarmsRef.current.has(triggerKey)) {
@@ -817,7 +813,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   return (
-    <div className="space-y-5 font-sans text-slate-100">
+    <div className="space-y-5 font-sans text-slate-100" style={{ colorScheme: 'dark' }}>
       
       <style>{`
         @import url('https://fonts.googleapis.com/css?family=Amethysta');
@@ -954,6 +950,31 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             color: #ffbf00; 
             text-shadow: 0 0 15px rgba(255,191,0,0.6); 
         }
+
+        /* CUSTOM DROPDOWN DARK THEME */
+        .session-select-wrapper select {
+           appearance: none;
+           -webkit-appearance: none;
+           background: transparent;
+           border: none;
+           color: inherit;
+           width: 100%;
+           height: 100%;
+           cursor: pointer;
+           position: absolute;
+           top: 0;
+           left: 0;
+           opacity: 0;
+           z-index: 2;
+        }
+
+        /* Styling Options for Chrome/Edge/Firefox */
+        select option {
+          background-color: #0b0f1a !important;
+          color: #ccff00 !important;
+          font-weight: bold;
+          padding: 10px;
+        }
       `}</style>
       
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
@@ -961,12 +982,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1 min-w-0">
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
+            <div className="session-select-wrapper relative flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
               <span className="font-mono-code font-black text-xs uppercase tracking-wider">{selectedSession === "ALL PASARAN" ? "ALL PASARAN" : `SESI ${selectedSession}`}</span>
               <select
                 value={selectedSession}
                 onChange={(e) => setSelectedSession(e.target.value)}
-                className="absolute opacity-0 cursor-pointer w-[120px]"
               >
                 <option value="SORE">SESI SORE</option>
                 <option value="PAGI">SESI PAGI</option>
