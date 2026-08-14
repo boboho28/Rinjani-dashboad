@@ -189,12 +189,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   };
 
   const triggerAlarm = (alarmData: AlarmItem) => {
-    // 1. Mulai Suara di Dashboard Utama
     if (!isMuted) {
       startAlarmSound();
     }
 
-    // 2. Judul Tab Berkedip
     if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
     let isAlertTitle = false;
     titleIntervalRef.current = setInterval(() => {
@@ -204,7 +202,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         isAlertTitle = !isAlertTitle;
     }, 1000);
 
-    // 3. System Notification
     if ("Notification" in window && Notification.permission === "granted" && isAlarmEnabled) {
       const n = new Notification(`⚠️ RINJANI ALARM: ${alarmData.pasaranName}`, {
         body: `Waktunya Result ${alarmData.pasaranName} jam ${alarmData.jamResult}.`,
@@ -217,15 +214,13 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       };
     }
 
-    // 4. BUKA POP-OUT WINDOW (IDENTIK DENGAN TAMPILAN DASHBOARD)
     try {
-        const width = 1000;
-        const height = 750;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
+        // FULL SCREEN POPUP LOGIC
+        const width = window.screen.availWidth;
+        const height = window.screen.availHeight;
         
         const winName = `RinjaniAlarm_${Date.now()}`;
-        const popup = window.open("", winName, `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
+        const popup = window.open("", winName, `width=${width},height=${height},top=0,left=0,menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
         
         if (popup) {
             popupWindowRef.current = popup;
@@ -234,7 +229,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>⚠️ RESULT ${alarmData.pasaranName}</title>
+                    <title>⚠️ ALARM RESULT: ${alarmData.pasaranName}</title>
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
                         
@@ -257,130 +252,165 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                             content: "";
                             position: absolute;
                             inset: 0;
-                            background: rgba(0, 0, 0, 0.65);
-                            backdrop-filter: blur(2px);
+                            background: rgba(0, 0, 0, 0.7);
+                            backdrop-filter: blur(3px);
                             z-index: 1;
                         }
 
-                        .content {
+                        .container {
                             position: relative;
                             z-index: 10;
                             display: flex;
                             flex-direction: column;
                             align-items: center;
                             text-align: center;
-                            width: 100%;
+                            width: 90%;
                         }
 
-                        /* 3D SWINGING BELL */
-                        .bell-scope {
-                            --_size: 240px;
-                            --base-clr: #b7b5b4;
-                            --degofrot: 18;
-                            font-size: calc(var(--_size) * 0.01);
+                        /* REFINED 3D BELL ANIMATION */
+                        .bell-wrapper {
                             position: relative;
-                            width: 80em;
-                            height: 80em;
-                            margin-bottom: 50px;
+                            width: 300px;
+                            height: 300px;
+                            margin-bottom: 30px;
+                            perspective: 1000px;
                         }
 
-                        .bell-container {
-                            width: 80em;
-                            height: 80em;
+                        .bell-anchor {
                             position: absolute;
-                            transform-origin: 50% -20em;
-                            animation: bell-swing 1.8s ease-in-out infinite;
+                            top: 0;
+                            left: 50%;
+                            width: 2px;
+                            height: 60px;
+                            background: #888;
+                            transform: translateX(-50%);
                         }
 
-                        @keyframes bell-swing {
-                            0%, 100% { transform: rotate(calc(1deg * var(--degofrot))); }
-                            50% { transform: rotate(calc(-1deg * var(--degofrot))); }
+                        .bell-body-group {
+                            position: absolute;
+                            top: 60px;
+                            left: 50%;
+                            transform-origin: top center;
+                            animation: bell-swing-new 1.5s ease-in-out infinite;
                         }
 
-                        .bell-container * { position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; }
-                        .rope { height: 45em; width: 1.5em; translate: 0 -110%; background: repeating-linear-gradient(-70deg, #252525, #888 2%, #3a3a3a 3%); }
-                        .bell-top { width: 14%; height: 14%; border-radius: 50%; translate: 0 -28em; background: var(--base-clr); box-shadow: inset -1em -0.5em 2em 0.5em #fff, inset 1em -1em 2em 3em #000; }
-                        .bell-base { width: 52%; height: 52%; border-radius: 50%; translate: 0 -24%; background: var(--base-clr); }
-                        .bell-base:before, .bell-base:after { content: ""; position: absolute; width: 100%; height: 80%; }
-                        .bell-base:before { background-image: radial-gradient(circle at -80% -12%, transparent 50em, var(--base-clr) 50em); translate: -18em 20em; }
-                        .bell-base:after { background-image: radial-gradient(circle at -80% -12%, transparent 50.1em, #cacaca 50.3em, var(--base-clr) 50.5em); translate: 18em 20em; transform: rotateY(180deg); }
-                        .bell-btm { width: 90%; height: 20%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
-                        .bell-btm2 { width: 78%; height: 13%; border-radius: 50%; translate: 0 24em; background: #fffff6; box-shadow: 0 0 2em 1em #ffe9d4, inset 0 -2em 2em -2em #ffe9d4; }
-                        .bell-ring { width: 12em; height: 12em; background: #fff; border-radius: 50%; translate: 0 23.5em; z-index: 5; }
+                        @keyframes bell-swing-new {
+                            0%, 100% { transform: translateX(-50%) rotate(20deg); }
+                            50% { transform: translateX(-50%) rotate(-20deg); }
+                        }
 
-                        /* TEXT STYLES */
+                        .bell-shape {
+                            width: 140px;
+                            height: 160px;
+                            background: #e0e0e0;
+                            border-radius: 50% 50% 15% 15% / 70% 70% 30% 30%;
+                            position: relative;
+                            box-shadow: inset -15px -10px 30px rgba(0,0,0,0.5), inset 15px 10px 30px rgba(255,255,255,0.8);
+                        }
+
+                        .bell-bottom-rim {
+                            position: absolute;
+                            bottom: -15px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            width: 170px;
+                            height: 40px;
+                            background: #d0d0d0;
+                            border-radius: 50%;
+                            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .bell-clapper {
+                            width: 35px;
+                            height: 35px;
+                            background: #333;
+                            border-radius: 50%;
+                            position: absolute;
+                            bottom: -5px;
+                        }
+
+                        /* UI ELEMENTS */
                         .badge {
-                            background: rgba(0,0,0,0.5);
-                            border: 1px solid #ccff00;
+                            background: rgba(204, 255, 0, 0.15);
+                            border: 2px solid #ccff00;
                             border-radius: 50px;
-                            padding: 10px 35px;
-                            margin-bottom: 25px;
+                            padding: 12px 40px;
+                            margin-bottom: 30px;
                             display: flex;
                             align-items: center;
                             gap: 15px;
+                            box-shadow: 0 0 20px rgba(204, 255, 0, 0.3);
                         }
+                        
                         .badge-text {
                             color: #ccff00;
                             font-weight: 900;
-                            letter-spacing: 0.2em;
+                            letter-spacing: 0.3em;
                             text-transform: uppercase;
-                            font-size: 16px;
+                            font-size: 18px;
                             text-shadow: 0 0 10px #ccff00;
                         }
 
                         h1 {
-                            font-size: 72px;
+                            font-size: 85px;
                             font-weight: 900;
                             margin: 0;
                             text-transform: uppercase;
                             letter-spacing: 0.15em;
-                            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+                            color: #fff;
+                            text-shadow: 0 0 40px rgba(255, 255, 255, 0.4), 0 0 80px rgba(255, 255, 255, 0.2);
                         }
 
                         .jam-result {
-                            font-size: 34px;
+                            font-size: 42px;
                             color: #ccff00;
                             font-weight: 900;
-                            letter-spacing: 0.3em;
-                            margin: 25px 0 50px 0;
+                            letter-spacing: 0.4em;
+                            margin: 30px 0 60px 0;
                             font-style: italic;
                             text-transform: uppercase;
+                            text-shadow: 0 0 20px rgba(204, 255, 0, 0.5);
                         }
 
                         .btn {
                             background: #ccff00;
                             color: #000;
                             border: none;
-                            padding: 20px 70px;
-                            font-size: 24px;
+                            padding: 25px 90px;
+                            font-size: 30px;
                             font-weight: 900;
-                            border-radius: 15px;
+                            border-radius: 20px;
                             cursor: pointer;
                             text-transform: uppercase;
-                            box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
-                            transition: transform 0.3s, background 0.3s;
+                            box-shadow: 0 0 40px rgba(204, 255, 0, 0.6);
+                            transition: all 0.3s ease;
+                            font-family: 'Orbitron', sans-serif;
                         }
+                        
                         .btn:hover {
                             transform: scale(1.1);
                             background: #e5ff80;
+                            box-shadow: 0 0 60px rgba(204, 255, 0, 0.8);
                         }
                     </style>
                 </head>
                 <body>
-                    <div class="content">
-                        <div class="bell-scope">
-                            <div class="bell-container">
-                                <div class="rope"></div>
-                                <div class="bell-top"></div>
-                                <div class="bell-base"></div>
-                                <div class="bell-btm"></div>
-                                <div class="bell-btm2"></div>
-                                <div class="bell-ring"></div>
+                    <div class="container">
+                        <div class="bell-wrapper">
+                            <div class="bell-anchor"></div>
+                            <div class="bell-body-group">
+                                <div class="bell-shape"></div>
+                                <div class="bell-bottom-rim">
+                                    <div class="bell-clapper"></div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="badge">
-                            <span style="font-size: 22px;">⏰</span>
+                            <span style="font-size: 28px;">⏰</span>
                             <span class="badge-text">RINJANI ALARM RESULT</span>
                         </div>
 
@@ -391,18 +421,20 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     </div>
 
                     <script>
+                        // Fokuskan window saat terbuka
                         window.focus();
+                        
                         function stopParentAlarm() {
-                            if (window.opener) {
+                            if (window.opener && !window.opener.closed) {
                                 window.opener.postMessage('STOP_ALARM_RINJANI', '*');
                             }
                             window.close();
                         }
                         
-                        // Close otomatis jika dashboard utama ditutup
-                        const checker = setInterval(() => { 
+                        // Menutup jendela jika dashboard utama ditutup
+                        const checkParent = setInterval(() => { 
                             if(!window.opener || window.opener.closed) {
-                                clearInterval(checker);
+                                clearInterval(checkParent);
                                 window.close(); 
                             }
                         }, 1000);
@@ -412,7 +444,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             `);
             popup.document.close();
         } else {
-            addToast("Popup terblokir! Mohon izinkan pop-up untuk situs ini.", "error");
+            addToast("Popup Fullscreen terblokir! Mohon izinkan pop-up di browser Anda.", "error");
         }
     } catch (e) {
         console.error("Popup Error:", e);
