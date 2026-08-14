@@ -57,18 +57,31 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
   // --- STATE FOR RUMUS SINGAPORE POOLS ---
   const [sweepInput, setSweepInput] = useState<string>('');
-  const [sweepBalls, setSweepBalls] = useState<number[]>([4, 7, 22, 29, 33, 46, 48]);
-  const [calculated4D, setCalculated4D] = useState<string>('9280');
+  const [sweepBalls, setSweepBalls] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [calculated4D, setCalculated4D] = useState<string>('0000');
 
-  // Logika Perhitungan Rumus Sesuai Gambar Excel
+  // Logika Perhitungan Rumus Sesuai Gambar Excel + Logika Reset ke 0
   useEffect(() => {
-    const nums = sweepInput.trim().split(/[\s,.-]+/).filter(n => n !== '').map(n => parseInt(n, 10) || 0);
+    const rawValue = sweepInput.trim();
     
-    if (nums.length >= 7) {
+    // JIKA INPUT KOSONG: RESET SEMUA KE 0
+    if (!rawValue) {
+      setSweepBalls([0, 0, 0, 0, 0, 0, 0]);
+      setCalculated4D('0000');
+      return;
+    }
+
+    const nums = rawValue.split(/[\s,.-]+/).filter(n => n !== '').map(n => parseInt(n, 10) || 0);
+    
+    // JIKA ANGKA KURANG DARI 7: TETAP RESET KE 0
+    if (nums.length < 7) {
+      setSweepBalls([0, 0, 0, 0, 0, 0, 0]);
+      setCalculated4D('0000');
+    } else {
+      // JIKA MINIMAL 7 ANGKA: JALANKAN RUMUS EXCEL
       const b = nums.slice(0, 7);
       setSweepBalls(b);
 
-      // Rumus Excel:
       // Digit 1: Angka terakhir dari (Bola 2 + Bola 3)
       const d1 = String(b[1] + b[2]).slice(-1); 
       // Digit 2: Angka terakhir dari (Bola 4 + Bola 5)
@@ -916,7 +929,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         @keyframes l7 { 0%, 70% {background-size:100% 40%,8px 8px} 85% {background-size:100% 120%,8px 8px} 100% {background-size:100% 40%,8px 8px} }
 
         /* GOLD THEME STYLES FOR RUMUS SECTION */
-        .rumus-card { 
+        .rumus-box { 
             background: #0a0a0a; 
             border: 2px solid #2d2417; 
             border-radius: 20px; 
@@ -942,6 +955,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1 min-w-0">
+          
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
               <span className="font-mono-code font-black text-xs uppercase tracking-wider">{selectedSession === "ALL PASARAN" ? "ALL PASARAN" : `SESI ${selectedSession}`}</span>
@@ -1007,10 +1021,11 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* MIDDLE SECTION: RUMUS SINGAPORE POOLS (EXCEL LOGIC + GOLD THEME) */}
-        <div className="rumus-card flex flex-col items-center justify-center p-4 px-8 min-w-[400px] gap-3">
+        {/* CENTER SECTION: RUMUS SINGAPORE POOLS (GOLD THEME + RESET LOGIC) */}
+        <div className="rumus-box flex flex-col items-center justify-center p-4 px-8 min-w-[400px] gap-3">
           <div className="fire-title-container">
             {renderFireLetters("RUMUS SINGAPORE POOLS", "1.1em")}
           </div>
@@ -1041,7 +1056,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           </div>
         </div>
 
-        {/* RIGHT SECTION: TERMINAL PRIZE */}
         <div className="relative w-full lg:w-[450px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-3 pt-5 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-3">
           <div className="absolute -top-4 left-4 bg-[#ccff00] text-slate-950 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80] text-[10px] font-black tracking-widest uppercase">
             TERMINAL PRIZE
@@ -1347,7 +1361,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       {/* CONFIG MODAL */}
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-3xl w-full max-w-md p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
+          <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-3xl w-full max-md sm:max-w-md p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
             <div className="flex items-center justify-between border-b border-[#ccff00]/30 pb-4">
               <div className="flex items-center gap-2"><AlarmClock className="w-6 h-6 text-[#ccff00]" /><h3 className="text-base font-black text-[#ccff00] font-brand uppercase tracking-wider">KONFIGURASI ALARM</h3></div>
               <button type="button" onClick={() => setShowAlarmConfigModal(false)} className="text-slate-400 hover:text-white p-1"><X className="w-6 h-6" /></button>
@@ -1374,7 +1388,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span><div className="flex items-center gap-3 mt-1.5"><span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span><span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span></div></div>
             </div>
             <div className="space-y-2.5"><label className="text-sm font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-2"><FileText className="w-4 h-4 text-[#ccff00]" />Teks Rekapan</label><textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-4 text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none transition-all" /></div>
-            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><><Check className="w-5 h-5" /> Tersalin!</></> : <><><Copy className="w-5 h-5" /> Salin Teks</></>}</button></div>
+            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><Check className="w-5 h-5" /> Tersalin!</> : <><Copy className="w-5 h-5" /> Salin Teks</>}</button></div>
           </div>
         </div>
       )}
