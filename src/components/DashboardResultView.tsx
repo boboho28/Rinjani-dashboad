@@ -226,15 +226,14 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       };
     }
 
-    // 5. PERBAIKAN POP-OUT WINDOW (Agar muncul meski di tab lain)
+    // 5. POP-OUT WINDOW PERFECTION (BACKGROUND GRUNGE + LONCENG 3D)
     try {
-        const width = 480;
-        const height = 580;
+        const width = 850;
+        const height = 550;
         const left = (window.screen.width / 2) - (width / 2);
         const top = (window.screen.height / 2) - (height / 2);
+        const winName = `Rinjani_Popup_${Date.now()}`;
         
-        // Gunakan nama window unik berdasarkan pasaran agar tidak menimpa jika ada 2 alarm berdekatan
-        const winName = `RinjaniAlarm_${alarmData.pasaranName.replace(/\s+/g, '_')}`;
         const popup = window.open("", winName, `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no,scrollbars=no`);
         
         if (popup) {
@@ -244,43 +243,89 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>⚠️ RESULT ${alarmData.pasaranName}</title>
+                    <title>⚠️ ${alarmData.pasaranName} RESULT NOW</title>
                     <style>
-                        body { background: #070913; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; border: 4px solid #ccff00; box-sizing: border-box; }
-                        .bell-box { font-size: 100px; animation: swing 0.8s ease-in-out infinite alternate; margin-bottom: 20px; filter: drop-shadow(0 0 20px #ccff00); }
-                        @keyframes swing { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
-                        h1 { color: #ccff00; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 3px; text-align: center; font-weight: 900; text-shadow: 0 0 15px rgba(204,255,0,0.5); }
-                        h2 { font-size: 20px; color: #fff; margin: 15px 0; letter-spacing: 2px; font-weight: bold; }
-                        .btn { background: #ccff00; border: none; padding: 20px 40px; font-weight: 900; cursor: pointer; border-radius: 15px; margin-top: 30px; text-transform: uppercase; color: #000; font-size: 16px; box-shadow: 0 0 20px rgba(204,255,0,0.4); transition: transform 0.2s; }
-                        .btn:hover { transform: scale(1.1); background: #e5ff80; }
+                        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
+                        body { 
+                            margin: 0; padding: 0; 
+                            background: #000 url('https://i.pinimg.com/736x/f3/30/39/f33039034dcce22a500a206f6e7ed286.jpg') no-repeat center center; 
+                            background-size: cover;
+                            color: #fff; font-family: 'Orbitron', sans-serif;
+                            display: flex; flex-direction: column; align-items: center; justify-content: center;
+                            height: 100vh; overflow: hidden;
+                        }
+                        .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(2px); z-index: 1; }
+                        .content { position: relative; z-index: 10; text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; }
+                        
+                        /* 3D HANGING BELL */
+                        .bell-scope { position: absolute; top: -160px; left: 50%; transform: translateX(-50%); width: 250px; height: 350px; }
+                        .rope { width: 4px; height: 180px; background: linear-gradient(to right, #333, #888, #333); margin: 0 auto; box-shadow: 0 0 15px #000; }
+                        .bell-head { 
+                          width: 150px; height: 130px; background: #c0c0c0; border-radius: 75px 75px 25px 25px; 
+                          margin: -10px auto 0; position: relative; 
+                          box-shadow: inset -15px -15px 30px #000, inset 15px 15px 30px #fff, 0 10px 20px rgba(0,0,0,0.5); 
+                          animation: swing 1.5s ease-in-out infinite alternate; transform-origin: top center; 
+                        }
+                        .bell-clapper { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; background: #333; border-radius: 50%; box-shadow: 0 0 10px #000; }
+                        .bell-light { 
+                          position: absolute; bottom: -120px; left: 50%; transform: translateX(-50%); 
+                          width: 350px; height: 400px; 
+                          background: radial-gradient(circle at top, rgba(255,255,255,0.45) 0%, transparent 75%); 
+                          clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); pointer-events: none; 
+                        }
+                        @keyframes swing { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+
+                        .badge { 
+                            background: rgba(0,0,0,0.5); border: 2px solid #ccff00; border-radius: 50px; 
+                            padding: 10px 30px; display: inline-flex; align-items: center; gap: 12px; margin-bottom: 30px;
+                            box-shadow: 0 0 20px rgba(204,255,0,0.3);
+                        }
+                        .badge span { color: #ccff00; font-size: 14px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+                        
+                        h1 { font-size: 65px; margin: 0; font-weight: 900; letter-spacing: 6px; text-transform: uppercase; color: #fff; text-shadow: 0 0 30px rgba(255,255,255,0.6); }
+                        h2 { font-size: 32px; color: #ccff00; margin: 15px 0 40px; font-weight: 900; font-style: italic; letter-spacing: 5px; text-shadow: 0 0 20px #ccff00; }
+                        
+                        .btn { 
+                            background: #ccff00; color: #000; border: none; padding: 22px 60px; border-radius: 15px; 
+                            font-weight: 900; font-size: 18px; cursor: pointer; text-transform: uppercase;
+                            box-shadow: 0 0 30px rgba(204,255,0,0.7); transition: all 0.3s;
+                        }
+                        .btn:hover { transform: scale(1.1); background: #e5ff80; box-shadow: 0 0 50px #ccff00; }
                     </style>
                 </head>
                 <body>
-                    <div class="bell-box">🔔</div>
-                    <h1>${alarmData.pasaranName}</h1>
-                    <h2>RESULT TIME: ${alarmData.jamResult}</h2>
-                    <button class="btn" onclick="window.opener.focus(); window.close();">PROSES RESULT SEKARANG</button>
+                    <div class="overlay"></div>
+                    <div class="bell-scope">
+                        <div class="rope"></div>
+                        <div class="bell-head">
+                            <div class="bell-clapper"></div>
+                            <div class="bell-light"></div>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <div class="badge">
+                            <span style="font-size:22px">⏰</span>
+                            <span>RINJANI ALARM RESULT</span>
+                        </div>
+                        <h1>${alarmData.pasaranName}</h1>
+                        <h2>JAM RESULT ${alarmData.jamResult}</h2>
+                        <button class="btn" onclick="window.opener.focus(); window.close();">PROSES RESULT SEKARANG</button>
+                    </div>
                     <script>
-                        // Memaksa window ke depan saat dibuka
+                        // Memaksa window fokus saat dibuka
                         window.focus();
                         // Tutup otomatis jika dashboard utama ditutup
-                        const checker = setInterval(() => { 
-                            if(!window.opener || window.opener.closed) {
-                                clearInterval(checker);
-                                window.close(); 
-                            }
-                        }, 1000);
+                        setInterval(() => { if(!window.opener || window.opener.closed) window.close(); }, 1000);
                     </script>
                 </body>
                 </html>
             `);
             popup.document.close();
-            popup.focus(); // Fokuskan popup yang baru dibuka
-        } else {
-            console.warn("Popup blocked! Please allow popups for this site.");
+            // Upaya ekstra memfokuskan popup
+            setTimeout(() => { if(popup) popup.focus(); }, 200);
         }
     } catch (e) {
-        console.error("Popup Error:", e);
+        console.warn("External popup blocked by browser settings.");
     }
   };
 
@@ -1156,152 +1201,41 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-340px)] min-h-[350px] overflow-y-auto custom-scrollbar">
         <table className="w-full text-left border-collapse min-w-[1000px] relative">
-          <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
-            <tr className="border-b-2 border-[#ccff00]/40 text-[11px] font-mono-code uppercase text-[#ccff00] tracking-wider">
-              <th className="py-3 px-3 bg-[#0d1222]">SESH</th>
-              <th className="py-3 px-3 bg-[#0d1222]">NAMA PASARAN</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">JAM TUTUP</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">JAM RESULT</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">LINK</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">RESULT STATUS</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">P1</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">P2</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">P3</th>
-              <th className="py-3 px-3 text-center bg-[#0d1222]">STATUS</th>
-              <th className="py-3 px-3 text-right bg-[#0d1222]">OPSI</th>
+          <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)] border-b-2 border-[#ccff00]/40 text-[11px] text-[#ccff00] tracking-wider uppercase font-mono-code">
+            <tr>
+              <th className="py-3 px-3">SESH</th>
+              <th className="py-3 px-3">NAMA PASARAN</th>
+              <th className="py-3 px-3 text-center">JAM TUTUP</th>
+              <th className="py-3 px-3 text-center">JAM RESULT</th>
+              <th className="py-3 px-3 text-center">LINK</th>
+              <th className="py-3 px-3 text-center">STATUS</th>
+              <th className="py-3 px-3 text-center">P1</th>
+              <th className="py-3 px-3 text-center">P2</th>
+              <th className="py-3 px-3 text-center">P3</th>
+              <th className="py-3 px-3 text-center">ACTION</th>
+              <th className="py-3 px-3 text-right">OPSI</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ccff00]/10 text-xs font-mono-code">
             {sortedFilteredList.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="py-12 text-center text-slate-500 font-body">
-                  Tidak ada pasaran untuk sesi {selectedSession}.
-                </td>
-              </tr>
+              <tr><td colSpan={11} className="py-12 text-center text-slate-500">Tidak ada pasaran untuk sesi {selectedSession}.</td></tr>
             ) : (
               sortedFilteredList.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`hover:bg-[#ccff00]/5 transition-all group ${
-                    item.status === 'DONE'
-                      ? 'bg-[#ccff00]/10 border-l-4 border-l-[#ccff00] font-bold text-slate-100 shadow-[inset_0_0_12px_rgba(204,255,0,0.15)]'
-                      : item.status === 'LIBUR'
-                      ? 'bg-amber-950/40 border-l-4 border-l-amber-400/80 font-bold text-amber-200/90 shadow-[inset_0_0_12px_rgba(245,158,11,0.15)]'
-                      : ''
-                  }`}
-                >
-                  <td className="py-3 px-3">
-                    <div className="relative flex items-center h-7 w-fit bg-[#0a0518] rounded-md border border-[#8b5cf6]/50 overflow-hidden shadow-[0_0_8px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all">
-                      <div className="flex items-center justify-center h-full aspect-square bg-gradient-to-b from-[#8b5cf6] to-[#4c1d95] shadow-[inset_0_0_4px_rgba(255,255,255,0.4)]">
-                        <Zap className="w-3 h-3 text-white fill-white/20 animate-pulse" />
-                      </div>
-                      <div className="px-3 h-full flex items-center bg-gradient-to-r from-[#1e0a3d] to-[#0a0518]">
-                        <span className="text-[10px] font-black text-purple-100 italic tracking-tighter uppercase drop-shadow-[0_0_4px_rgba(167,139,250,0.8)] font-heading">
-                          {item.session}
-                        </span>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#a78bfa] to-transparent shadow-[0_0_8px_#a78bfa]" />
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-3">
-                    <span className="font-brand font-black italic uppercase text-[15px] tracking-tighter text-[#22d3ee] [text-shadow:1px_1px_0_#9333ea,3px_3px_0_#4c1d95,0_0_15px_rgba(34,211,238,0.7)] group-hover:scale-110 transition-transform inline-block">
-                      {item.name}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <div className="digital-clock-container" data-time={item.jamTutup.replace(' WIB', '')} />
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <div className="digital-clock-container" data-time={item.jamResult.replace(' WIB', '')} />
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    {(() => {
-                      const urls = getUrlsFromItem(item);
-                      if (urls.length === 0) {
-                        return <span className="text-slate-600">-</span>;
-                      }
-                      return (
-                        <div className="flex items-center justify-center">
-                           <button
-                            type="button"
-                            onClick={() => handleOpenAllLinks(item)}
-                            className="link-loader"
-                            title={`Buka ${urls.length} Link Sekaligus`}
-                          />
-                        </div>
-                      );
-                    })()}
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    {renderResultStatusBadge(item)}
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <span className="font-mono-code font-black italic tracking-widest text-[18px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
-                      {item.p1Prize || '-'}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <span className="font-mono-code font-black italic tracking-widest text-[18px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
-                      {item.p2Prize || '-'}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <span className="font-mono-code font-black italic tracking-widest text-[18px] text-white [text-shadow:1.5px_1.5px_0_#9333ea,3px_3px_0_#4c1d95,0_0_18px_#22d3ee]">
-                      {item.p3Prize || '-'}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3 text-center">
-                    <div
-                      className={`inline-block font-black text-[10px] px-3.5 py-1.5 rounded-xl tracking-wider uppercase shadow-sm font-heading cursor-default select-none ${
-                        item.status === 'BELUM'
-                          ? 'bg-rose-600 text-white border border-rose-400 shadow-[0_0_8px_rgba(225,29,72,0.5)]'
-                          : item.status === 'DONE'
-                          ? 'bg-[#ccff00] text-slate-950 border border-[#e5ff80] shadow-[0_0_12px_rgba(204,255,0,0.6)] font-black'
-                          : 'bg-amber-500/30 text-amber-300 border-2 border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
-                      }`}
-                    >
-                      {item.status}
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenResultPopup(item)}
-                        className="p-2 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Hasil Result & Calculation Shio (%)"
-                      >
-                        <Percent className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(item)}
-                        className="p-2 bg-[#0d0f1a] border border-[#ccff00]/40 text-[#ccff00] hover:text-white rounded-lg hover:bg-[#ccff00]/20 transition-all cursor-pointer"
-                        title="Edit Pasaran"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePasaran(item.id, item.name)}
-                        className="p-2 bg-rose-950/80 border border-rose-500/40 text-rose-400 hover:text-rose-200 rounded-lg hover:bg-rose-900 transition-all cursor-pointer"
-                        title="Hapus Pasaran"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                <tr key={item.id} className={`hover:bg-[#ccff00]/5 transition-all group ${item.status === 'DONE' ? 'bg-[#ccff00]/10 border-l-4 border-l-[#ccff00] font-bold' : ''}`}>
+                  <td className="py-3 px-3"><div className="bg-purple-900/40 text-purple-200 px-2 py-1 rounded text-[9px] font-black uppercase italic border border-purple-500/30">{item.session}</div></td>
+                  <td className="py-3 px-3"><span className="text-[#22d3ee] font-brand font-black uppercase text-[15px] italic tracking-tighter [text-shadow:0_0_15px_rgba(34,211,238,0.7)]">{item.name}</span></td>
+                  <td className="py-3 px-3 text-center"><div className="digital-clock-container" data-time={item.jamTutup.replace(' WIB', '')} /></td>
+                  <td className="py-3 px-3 text-center"><div className="digital-clock-container" data-time={item.jamResult.replace(' WIB', '')} /></td>
+                  <td className="py-3 px-3 text-center"><button type="button" onClick={()=>{ if(item.linkUrl) handleOpenAllLinks(item); }} className="text-white hover:text-[#ccff00] transition-colors"><ExternalLink className="w-4 h-4"/></button></td>
+                  <td className="py-3 px-3 text-center">{renderResultStatusBadge(item)}</td>
+                  <td className="py-3 px-3 text-center font-black text-lg text-white" style={{textShadow:'0 0 12px #22d3ee'}}>{item.p1Prize || '-'}</td>
+                  <td className="py-3 px-3 text-center font-black text-lg text-white/40">{item.p2Prize || '-'}</td>
+                  <td className="py-3 px-3 text-center font-black text-lg text-white/40">{item.p3Prize || '-'}</td>
+                  <td className="py-3 px-3 text-center"><span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm ${item.status === 'DONE' ? 'bg-[#ccff00] text-black border border-[#e5ff80]' : 'bg-rose-600 text-white border border-rose-400'}`}>{item.status}</span></td>
+                  <td className="py-3 px-3 text-right flex justify-end gap-2">
+                    <button type="button" onClick={()=>handleOpenResultPopup(item)} className="p-2 border border-[#ccff00]/40 text-[#ccff00] rounded-lg hover:bg-[#ccff00]/10 transition-all"><Percent className="w-4 h-4"/></button>
+                    <button type="button" onClick={()=>handleOpenEditModal(item)} className="p-2 border border-[#ccff00]/40 text-[#ccff00] rounded-lg hover:bg-[#ccff00]/10 transition-all"><Edit2 className="w-4 h-4"/></button>
+                    <button type="button" onClick={()=>handleDeletePasaran(item.id, item.name)} className="p-2 border border-rose-500/40 text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all"><Trash2 className="w-4 h-4"/></button>
                   </td>
                 </tr>
               ))
@@ -1333,7 +1267,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM TUTUP</label><input type="text" value={formJamTutup} onChange={(e) => setFormJamTutup(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none" /></div>
                 <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">JAM RESULT</label><input type="text" value={formJamResult} onChange={(e) => setFormJamResult(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] font-bold outline-none" /></div>
               </div>
-              <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">LINK LIVE DRAW / OFFICIAL (Multi-Link)</label><textarea rows={3} placeholder={"Satu link per baris..."} value={formLinkUrl} onChange={(e) => setFormLinkUrl(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]" /></div>
+              <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">LINK LIVE DRAW / OFFICIAL</label><textarea rows={3} placeholder={"Satu link per baris..."} value={formLinkUrl} onChange={(e) => setFormLinkUrl(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/40 rounded-xl px-4 py-2.5 text-[#ccff00] outline-none text-xs font-mono resize-none focus:border-[#ccff00]" /></div>
               <div className="grid grid-cols-3 gap-3">
                 <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P1</label><input type="text" value={formP1Prize} onChange={(e) => setFormP1Prize(e.target.value)} className="w-full bg-[#141b2d] border border-[#ccff00]/50 rounded-xl px-2 py-2.5 text-[#ccff00] font-bold text-center outline-none" /></div>
                 <div><label className="block text-slate-300 font-bold mb-1.5 uppercase">PRIZE P2</label><input type="text" value={formP2Prize} onChange={(e) => setFormP2Prize(e.target.value)} className="w-full bg-[#141b2d] border border-slate-700 rounded-xl px-2 py-2.5 text-slate-200 font-bold text-center outline-none" /></div>
@@ -1345,7 +1279,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 3D BELL ALARM POPUP WITH BACKGROUND */}
+      {/* 3D BELL ALARM POPUP (INTERNAL) */}
       {activeAlarm && (
         <div 
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 overflow-hidden bg-cover bg-center"
@@ -1377,9 +1311,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-4xl sm:text-6xl font-brand font-black text-white tracking-widest uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+              <h1 className="text-4xl sm:text-6xl font-brand font-black text-white tracking-widest uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                 {activeAlarm.pasaranName}
-              </h2>
+              </h1>
               <div className="text-2xl sm:text-3xl font-brand font-black text-[#ccff00] tracking-[0.3em] uppercase italic">
                 JAM RESULT {activeAlarm.jamResult}
               </div>
@@ -1393,8 +1327,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               OK / TUTUP
             </button>
           </div>
-
-          <div className="grain"></div>
         </div>
       )}
 
@@ -1418,7 +1350,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     <span>TEST POP-OUT SEKARANG</span>
                 </button>
               </div>
-              <p className="text-[10px] text-slate-500 italic text-center mt-2 px-4">Jika pop-out tidak muncul, pastikan "Pop-ups" diperbolehkan (Allowed) pada pengaturan browser Anda untuk situs ini.</p>
+              <p className="text-[10px] text-slate-500 italic text-center mt-2 px-4 leading-relaxed">Jika jendela tidak muncul saat tab lain terbuka, pastikan izin "Pop-ups and redirects" telah di-set ke **Allowed** di browser Chrome Anda.</p>
             </div>
           </div>
         </div>
@@ -1433,8 +1365,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <button type="button" onClick={() => setIsResultPopupOpen(false)} className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">RESULT P1</span><div className="text-2xl sm:text-3xl font-black text-[#ccff00] tracking-widest font-mono-code mt-1.5">{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</div></div>
-              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span><div className="flex items-center gap-3 mt-1.5"><span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span><span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span></div></div>
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 text-center"><span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-1">RESULT P1</span><span className="text-3xl font-black text-[#ccff00] tracking-widest" style={{textShadow:'0 0 10px rgba(204,255,0,0.5)'}}>{popupPasaran.p1Prize && popupPasaran.p1Prize !== '-' ? popupPasaran.p1Prize : '-'}</span></div>
+              <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 text-center"><span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-1">SHIO</span><div className="flex items-center justify-center gap-3 mt-1.5"><span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span><span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span></div></div>
             </div>
             <div className="space-y-2.5"><label className="text-sm font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-2"><FileText className="w-4 h-4 text-[#ccff00]" />Teks Rekapan</label><textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-4 text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none transition-all" /></div>
             <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><Check className="w-5 h-5" /> Tersalin!</> : <><Copy className="w-5 h-5" /> Salin Teks</>}</button></div>
