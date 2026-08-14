@@ -60,11 +60,10 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const [sweepBalls, setSweepBalls] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [calculated4D, setCalculated4D] = useState<string>('0000');
 
-  // Logika Perhitungan Rumus Sesuai Gambar Excel + Logika Reset ke 0
+  // Logika Perhitungan Rumus Sesuai Gambar Excel
   useEffect(() => {
     const rawValue = sweepInput.trim();
     
-    // JIKA INPUT KOSONG: RESET SEMUA KE 0
     if (!rawValue) {
       setSweepBalls([0, 0, 0, 0, 0, 0, 0]);
       setCalculated4D('0000');
@@ -73,20 +72,15 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
     const nums = rawValue.split(/[\s,.-]+/).filter(n => n !== '').map(n => parseInt(n, 10) || 0);
     
-    // JIKA ANGKA KURANG DARI 7: TETAP RESET KE 0
     if (nums.length < 7) {
       setSweepBalls([0, 0, 0, 0, 0, 0, 0]);
       setCalculated4D('0000');
     } else {
-      // JIKA MINIMAL 7 ANGKA: JALANKAN RUMUS EXCEL
       const b = nums.slice(0, 7);
       setSweepBalls(b);
 
-      // Digit 1: Angka terakhir dari (Bola 2 + Bola 3)
       const d1 = String(b[1] + b[2]).slice(-1); 
-      // Digit 2: Angka terakhir dari (Bola 4 + Bola 5)
       const d2 = String(b[3] + b[4]).slice(-1); 
-      // Digit 3 & 4: 2 Digit Terakhir dari ((Total Bola 1-6) * 2) - Bola 1 - Bola 6 + ADD
       const totalB16 = b[0] + b[1] + b[2] + b[3] + b[4] + b[5];
       const resStep = (totalB16 * 2) - b[0] - b[5] + b[6];
       const d34 = String(resStep).slice(-2).padStart(2, '0');
@@ -106,26 +100,34 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // --- REQUEST PERMISSIONS ON MOUNT ---
-  useEffect(() => {
-    if ("Notification" in window) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-    }
-    return () => {
-        if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
-    };
-  }, []);
-
   // --- ALARM SYSTEM STATE & LOGIC ---
-  const [activeAlarm, setActiveAlarm] = useState<AlarmItem | null>(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState<boolean>(true);
   const [showAlarmConfigModal, setShowAlarmConfigModal] = useState<boolean>(false);
   const triggeredAlarmsRef = useRef<Set<string>>(new Set());
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alarmIntervalRef = useRef<any>(null);
+
+  // Listener untuk menerima pesan dari Pop-out Window
+  useEffect(() => {
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data === 'STOP_ALARM_RINJANI') {
+        handleDismissAlarm();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+        if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
+        window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   const stopAlarmSound = () => {
     if (alarmIntervalRef.current) {
@@ -139,14 +141,12 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       audioCtxRef.current = null;
     }
     
-    // Stop Title Flashing
     if (titleIntervalRef.current) {
         clearInterval(titleIntervalRef.current);
         titleIntervalRef.current = null;
     }
     document.title = originalTitle.current;
 
-    // Close external popup window if any
     if (popupWindowRef.current && !popupWindowRef.current.closed) {
         popupWindowRef.current.close();
     }
@@ -181,26 +181,20 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       playBeepSeq();
       alarmIntervalRef.current = setInterval(playBeepSeq, 700);
-    } catch (err) {
-      console.warn('Audio alarm playback issue:', err);
-    }
+    } catch (err) {}
   };
 
   const handleDismissAlarm = () => {
     stopAlarmSound();
-    setActiveAlarm(null);
   };
 
   const triggerAlarm = (alarmData: AlarmItem) => {
-    // 1. Tampilkan Popup Modal Internal
-    setActiveAlarm(alarmData);
-    
-    // 2. Mulai Suara
+    // 1. Mulai Suara di Dashboard Utama
     if (!isMuted) {
       startAlarmSound();
     }
 
-    // 3. Tab Berkedip (Agar terlihat di list tab atas)
+    // 2. Judul Tab Berkedip
     if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
     let isAlertTitle = false;
     titleIntervalRef.current = setInterval(() => {
@@ -210,32 +204,28 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         isAlertTitle = !isAlertTitle;
     }, 1000);
 
-    // 4. Munculkan System Notification (Yang bisa diklik dari mana saja)
+    // 3. System Notification
     if ("Notification" in window && Notification.permission === "granted" && isAlarmEnabled) {
-      const notificationTitle = `⚠️ RINJANI ALARM: ${alarmData.pasaranName}`;
-      const n = new Notification(notificationTitle, {
-        body: `Waktunya Result ${alarmData.pasaranName} jam ${alarmData.jamResult}. Klik untuk proses!`,
+      const n = new Notification(`⚠️ RINJANI ALARM: ${alarmData.pasaranName}`, {
+        body: `Waktunya Result ${alarmData.pasaranName} jam ${alarmData.jamResult}.`,
         icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png',
-        tag: 'rinjani-alarm',
         requireInteraction: true
       });
-      
       n.onclick = () => {
-        window.focus(); // Mengembalikan layar ke tab dashboard ini
+        window.focus();
         n.close();
       };
     }
 
-    // 5. PERBAIKAN POP-OUT WINDOW (Agar muncul meski di tab lain)
+    // 4. BUKA POP-OUT WINDOW (IDENTIK DENGAN TAMPILAN DASHBOARD)
     try {
-        const width = 480;
-        const height = 580;
+        const width = 1000;
+        const height = 750;
         const left = (window.screen.width / 2) - (width / 2);
         const top = (window.screen.height / 2) - (height / 2);
         
-        // Gunakan nama window unik berdasarkan pasaran agar tidak menimpa jika ada 2 alarm berdekatan
-        const winName = `RinjaniAlarm_${alarmData.pasaranName.replace(/\s+/g, '_')}`;
-        const popup = window.open("", winName, `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no,scrollbars=no`);
+        const winName = `RinjaniAlarm_${Date.now()}`;
+        const popup = window.open("", winName, `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
         
         if (popup) {
             popupWindowRef.current = popup;
@@ -246,24 +236,170 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                     <meta charset="UTF-8">
                     <title>⚠️ RESULT ${alarmData.pasaranName}</title>
                     <style>
-                        body { background: #070913; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; border: 4px solid #ccff00; box-sizing: border-box; }
-                        .bell-box { font-size: 100px; animation: swing 0.8s ease-in-out infinite alternate; margin-bottom: 20px; filter: drop-shadow(0 0 20px #ccff00); }
-                        @keyframes swing { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
-                        h1 { color: #ccff00; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 3px; text-align: center; font-weight: 900; text-shadow: 0 0 15px rgba(204,255,0,0.5); }
-                        h2 { font-size: 20px; color: #fff; margin: 15px 0; letter-spacing: 2px; font-weight: bold; }
-                        .btn { background: #ccff00; border: none; padding: 20px 40px; font-weight: 900; cursor: pointer; border-radius: 15px; margin-top: 30px; text-transform: uppercase; color: #000; font-size: 16px; box-shadow: 0 0 20px rgba(204,255,0,0.4); transition: transform 0.2s; }
-                        .btn:hover { transform: scale(1.1); background: #e5ff80; }
+                        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
+                        
+                        body { 
+                            background: #000 url('https://i.pinimg.com/736x/f3/30/39/f33039034dcce22a500a206f6e7ed286.jpg') no-repeat center center;
+                            background-size: cover;
+                            color: #fff; 
+                            font-family: 'Orbitron', sans-serif; 
+                            display: flex; 
+                            flex-direction: column; 
+                            align-items: center; 
+                            justify-content: center; 
+                            height: 100vh; 
+                            margin: 0; 
+                            overflow: hidden; 
+                            position: relative;
+                        }
+
+                        body::before {
+                            content: "";
+                            position: absolute;
+                            inset: 0;
+                            background: rgba(0, 0, 0, 0.65);
+                            backdrop-filter: blur(2px);
+                            z-index: 1;
+                        }
+
+                        .content {
+                            position: relative;
+                            z-index: 10;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            text-align: center;
+                            width: 100%;
+                        }
+
+                        /* 3D SWINGING BELL */
+                        .bell-scope {
+                            --_size: 240px;
+                            --base-clr: #b7b5b4;
+                            --degofrot: 18;
+                            font-size: calc(var(--_size) * 0.01);
+                            position: relative;
+                            width: 80em;
+                            height: 80em;
+                            margin-bottom: 50px;
+                        }
+
+                        .bell-container {
+                            width: 80em;
+                            height: 80em;
+                            position: absolute;
+                            transform-origin: 50% -20em;
+                            animation: bell-swing 1.8s ease-in-out infinite;
+                        }
+
+                        @keyframes bell-swing {
+                            0%, 100% { transform: rotate(calc(1deg * var(--degofrot))); }
+                            50% { transform: rotate(calc(-1deg * var(--degofrot))); }
+                        }
+
+                        .bell-container * { position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; }
+                        .rope { height: 45em; width: 1.5em; translate: 0 -110%; background: repeating-linear-gradient(-70deg, #252525, #888 2%, #3a3a3a 3%); }
+                        .bell-top { width: 14%; height: 14%; border-radius: 50%; translate: 0 -28em; background: var(--base-clr); box-shadow: inset -1em -0.5em 2em 0.5em #fff, inset 1em -1em 2em 3em #000; }
+                        .bell-base { width: 52%; height: 52%; border-radius: 50%; translate: 0 -24%; background: var(--base-clr); }
+                        .bell-base:before, .bell-base:after { content: ""; position: absolute; width: 100%; height: 80%; }
+                        .bell-base:before { background-image: radial-gradient(circle at -80% -12%, transparent 50em, var(--base-clr) 50em); translate: -18em 20em; }
+                        .bell-base:after { background-image: radial-gradient(circle at -80% -12%, transparent 50.1em, #cacaca 50.3em, var(--base-clr) 50.5em); translate: 18em 20em; transform: rotateY(180deg); }
+                        .bell-btm { width: 90%; height: 20%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
+                        .bell-btm2 { width: 78%; height: 13%; border-radius: 50%; translate: 0 24em; background: #fffff6; box-shadow: 0 0 2em 1em #ffe9d4, inset 0 -2em 2em -2em #ffe9d4; }
+                        .bell-ring { width: 12em; height: 12em; background: #fff; border-radius: 50%; translate: 0 23.5em; z-index: 5; }
+
+                        /* TEXT STYLES */
+                        .badge {
+                            background: rgba(0,0,0,0.5);
+                            border: 1px solid #ccff00;
+                            border-radius: 50px;
+                            padding: 10px 35px;
+                            margin-bottom: 25px;
+                            display: flex;
+                            align-items: center;
+                            gap: 15px;
+                        }
+                        .badge-text {
+                            color: #ccff00;
+                            font-weight: 900;
+                            letter-spacing: 0.2em;
+                            text-transform: uppercase;
+                            font-size: 16px;
+                            text-shadow: 0 0 10px #ccff00;
+                        }
+
+                        h1 {
+                            font-size: 72px;
+                            font-weight: 900;
+                            margin: 0;
+                            text-transform: uppercase;
+                            letter-spacing: 0.15em;
+                            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+                        }
+
+                        .jam-result {
+                            font-size: 34px;
+                            color: #ccff00;
+                            font-weight: 900;
+                            letter-spacing: 0.3em;
+                            margin: 25px 0 50px 0;
+                            font-style: italic;
+                            text-transform: uppercase;
+                        }
+
+                        .btn {
+                            background: #ccff00;
+                            color: #000;
+                            border: none;
+                            padding: 20px 70px;
+                            font-size: 24px;
+                            font-weight: 900;
+                            border-radius: 15px;
+                            cursor: pointer;
+                            text-transform: uppercase;
+                            box-shadow: 0 0 30px rgba(204, 255, 0, 0.5);
+                            transition: transform 0.3s, background 0.3s;
+                        }
+                        .btn:hover {
+                            transform: scale(1.1);
+                            background: #e5ff80;
+                        }
                     </style>
                 </head>
                 <body>
-                    <div class="bell-box">🔔</div>
-                    <h1>${alarmData.pasaranName}</h1>
-                    <h2>RESULT TIME: ${alarmData.jamResult}</h2>
-                    <button class="btn" onclick="window.opener.focus(); window.close();">PROSES RESULT SEKARANG</button>
+                    <div class="content">
+                        <div class="bell-scope">
+                            <div class="bell-container">
+                                <div class="rope"></div>
+                                <div class="bell-top"></div>
+                                <div class="bell-base"></div>
+                                <div class="bell-btm"></div>
+                                <div class="bell-btm2"></div>
+                                <div class="bell-ring"></div>
+                            </div>
+                        </div>
+
+                        <div class="badge">
+                            <span style="font-size: 22px;">⏰</span>
+                            <span class="badge-text">RINJANI ALARM RESULT</span>
+                        </div>
+
+                        <h1>${alarmData.pasaranName}</h1>
+                        <div class="jam-result">JAM RESULT ${alarmData.jamResult}</div>
+
+                        <button class="btn" onclick="stopParentAlarm()">OK / TUTUP</button>
+                    </div>
+
                     <script>
-                        // Memaksa window ke depan saat dibuka
                         window.focus();
-                        // Tutup otomatis jika dashboard utama ditutup
+                        function stopParentAlarm() {
+                            if (window.opener) {
+                                window.opener.postMessage('STOP_ALARM_RINJANI', '*');
+                            }
+                            window.close();
+                        }
+                        
+                        // Close otomatis jika dashboard utama ditutup
                         const checker = setInterval(() => { 
                             if(!window.opener || window.opener.closed) {
                                 clearInterval(checker);
@@ -275,30 +411,13 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
                 </html>
             `);
             popup.document.close();
-            popup.focus(); // Fokuskan popup yang baru dibuka
         } else {
-            console.warn("Popup blocked! Please allow popups for this site.");
+            addToast("Popup terblokir! Mohon izinkan pop-up untuk situs ini.", "error");
         }
     } catch (e) {
         console.error("Popup Error:", e);
     }
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeAlarm) {
-        if (e.key === 'Escape' || e.key === ' ' || e.code === 'Space') {
-          e.preventDefault();
-          handleDismissAlarm();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [activeAlarm]);
 
   useEffect(() => {
     if (!isAlarmEnabled) return;
@@ -864,75 +983,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           100% { text-shadow: 0 0 10px #fefcc9, 5px -5px 15px #fefcc9, -10px -10px 20px #feec85, 11px -21px 30px #ffae34, -11px -29px 25px #ec760c, 0 -41px 40px #cd4606, 5px -45px 40px #973716; }
         }
 
-        /* BELL ALARM STYLES */
-        .bell-scope {
-          --_size: min(250px, 40vh);
-          --base-clr: #b7b5b4;
-          --degofrot: 4;
-          font-size: calc(var(--_size) * 0.01);
-          position: relative;
-          width: 80em;
-          height: 80em;
-          margin: 0 auto;
-        }
-
-        .bell-container {
-          width: 80em;
-          height: 80em;
-          position: absolute;
-          transform-origin: 50% -20em;
-          animation: bell-swing 2.5s ease-in-out infinite;
-        }
-
-        @keyframes bell-swing {
-          0%, 100% { transform: rotate(calc(1deg * var(--degofrot))); }
-          50% { transform: rotate(calc(-1deg * var(--degofrot))); }
-        }
-
-        .bell-container * { position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; }
-        
-        .rope { height: 40em; width: 1.5em; translate: 0 -110%; background: repeating-linear-gradient(-70deg, #252525, #888 2%, #3a3a3a 3%); }
-        .bell-top { width: 14%; height: 14%; border-radius: 50%; translate: 0 -28em; background: var(--base-clr); box-shadow: inset -1em -0.5em 2em 0.5em #fff, inset 1em -1em 2em 3em #000, 0 -0.1em 0.4em 0.3em #c6eaffa8; }
-        .bell-base { width: 50%; height: 50%; border-radius: 50%; translate: 0 -24%; background: var(--base-clr); box-shadow: 0 -0.1em 0.4em 0.2em #c6eaffa8; }
-        .bell-base:before, .bell-base:after { content: ""; position: absolute; width: 100%; height: 80%; }
-        .bell-base:before { background-image: radial-gradient(circle at -80% -12%, transparent 50em, var(--base-clr) 50em); translate: -18em 20em; }
-        .bell-base:after { background-image: radial-gradient(circle at -80% -12%, transparent 50.1em, #cacaca 50.3em, var(--base-clr) 50.5em); translate: 18em 20em; transform: rotateY(180deg); }
-        
-        .glow { width: 100%; height: 100%; filter: brightness(2) blur(2em); }
-        .glow::before { content: ""; display: block; width: 100%; height: 80%; translate: 0 6em; background: #fff3; clip-path: polygon(10% 80%, 50% 0, 90% 80%); }
-
-        .bell-btm { width: 88%; height: 18%; border-radius: 50%; translate: 0 23em; background: linear-gradient(90deg, black 40%, var(--base-clr) 90%); }
-        
-        /* LIGHT/GLOW ON BELL */
-        .bell-btm2 { 
-            width: 74%; height: 12%; border-radius: 50%; translate: 0 24em; 
-            background: #fffff6; 
-            box-shadow: 0 0 2em 0.8em #ffe9d4, 0 10em 25em 8em rgba(255, 233, 212, 0.5), inset 0 -2em 2em -2em #ffe9d4; 
-        }
-        
-        .bell-ring-container { width: 74%; height: 24%; border-radius: 50%; translate: 0 29.2em; overflow: hidden; }
-        .bell-ring { width: 12em; height: 12em; background: #fff; border-radius: 50%; translate: 0 -6em; box-shadow: 0 0.8em 1em -0.3em #f8e1d0, inset 0 100em 0 100em #2c2c2c; }
-
-        .bell-rays::before { content: ""; display: block; width: 100em; height: 100em; position: absolute; left: -21em; top: -77em; border-radius: 100%; background: repeating-conic-gradient(at 50% 50%, #fff2 0%, transparent 0.6%, #fff2 0.8%); animation: rotate-rays 4s linear infinite; }
-        @keyframes rotate-rays { from { rotate: 0deg; } to { rotate: 360deg; } }
-
-        .alarm-button {
-          position: relative;
-          font-size: 18px;
-          font-family: 'Amethysta', serif;
-          background: #ccff00;
-          color: #000;
-          cursor: pointer;
-          padding: 12px 40px;
-          border-radius: 12px;
-          font-weight: 900;
-          text-transform: uppercase;
-          box-shadow: 0 0 20px rgba(204, 255, 0, 0.4);
-          transition: all 0.3s;
-          margin-top: 30px;
-        }
-        .alarm-button:hover { transform: scale(1.05); background: #e5ff80; box-shadow: 0 0 30px rgba(204, 255, 0, 0.6); }
-
         .digital-clock-container {
           width: fit-content; background: #000; padding: 0 10px; font-size: 26px; font-family: 'Courier New', Courier, monospace; color: #fff; font-weight: bold; border-radius: 8px; position: relative; display: inline-block; line-height: 1.2; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
@@ -944,7 +994,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         .link-loader:before, .link-loader:after { content: ""; height: 18px; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(#222 0 0) top/100% 40% no-repeat, radial-gradient(farthest-side,#000 95%,#0000) 50%/8px 8px no-repeat #fff; animation: l7 1.5s infinite alternate ease-in; }
         @keyframes l7 { 0%, 70% {background-size:100% 40%,8px 8px} 85% {background-size:100% 120%,8px 8px} 100% {background-size:100% 40%,8px 8px} }
 
-        /* GOLD THEME STYLES FOR RUMUS SECTION */
         .rumus-box { 
             background: #0a0a0a; 
             border: 2px solid #2d2417; 
@@ -967,7 +1016,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             text-shadow: 0 0 15px rgba(255,191,0,0.6); 
         }
 
-        /* CUSTOM DROPDOWN DARK THEME */
         .session-select-wrapper select {
            appearance: none;
            -webkit-appearance: none;
@@ -984,7 +1032,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
            z-index: 2;
         }
 
-        /* Styling Options for Chrome/Edge/Firefox */
         select option {
           background-color: #0b0f1a !important;
           color: #ccff00 !important;
@@ -1064,7 +1111,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
         </div>
 
-        {/* CENTER SECTION: RUMUS SINGAPORE POOLS (GOLD THEME + RESET LOGIC) */}
         <div className="rumus-box flex flex-col items-center justify-center p-4 px-8 min-w-[400px] gap-3">
           <div className="fire-title-container">
             {renderFireLetters("RUMUS SINGAPORE POOLS", "1.1em")}
@@ -1310,7 +1356,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </table>
       </div>
 
-      {/* MODAL ADD / EDIT PASARAN */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0d1222] border-2 border-[#ccff00]/60 rounded-3xl w-full max-w-lg p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
@@ -1345,60 +1390,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* 3D BELL ALARM POPUP WITH BACKGROUND */}
-      {activeAlarm && (
-        <div 
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 overflow-hidden bg-cover bg-center"
-            style={{ backgroundImage: "url('https://i.pinimg.com/736x/f3/30/39/f33039034dcce22a500a206f6e7ed286.jpg')" }}
-        >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
-
-          <div className="bell-scope scale-110 sm:scale-125 mb-12">
-            <div className="bell-container">
-              <div className="rope"></div>
-              <div className="bell-top"></div>
-              <div className="bell-base"></div>
-              <div className="glow"></div>
-              <div className="bell-btm"></div>
-              <div className="bell-btm2"></div>
-              <div className="bell-ring-container">
-                <div className="bell-ring"></div>
-                <div className="bell-rays"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 text-center mt-32 space-y-6 animate-fade-in">
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-3 px-6 py-2 bg-black/40 border border-[#ccff00]/40 rounded-full">
-                <span className="text-xl animate-bounce">⏰</span>
-                <span className="text-sm font-black text-[#ccff00] font-brand tracking-[0.2em] uppercase drop-shadow-[0_0_8px_#ccff00]">RINJANI ALARM RESULT</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-4xl sm:text-6xl font-brand font-black text-white tracking-widest uppercase leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
-                {activeAlarm.pasaranName}
-              </h2>
-              <div className="text-2xl sm:text-3xl font-brand font-black text-[#ccff00] tracking-[0.3em] uppercase italic">
-                JAM RESULT {activeAlarm.jamResult}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleDismissAlarm}
-              className="alarm-button"
-            >
-              OK / TUTUP
-            </button>
-          </div>
-
-          <div className="grain"></div>
-        </div>
-      )}
-
-      {/* CONFIG MODAL */}
       {showAlarmConfigModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-3xl w-full max-md sm:max-w-md p-6 shadow-[0_0_40px_rgba(204,255,0,0.3)] space-y-5">
@@ -1424,7 +1415,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* RESULT POPUP SHIO */}
       {isResultPopupOpen && popupPasaran && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0e1b] border-2 border-[#ccff00]/70 rounded-3xl w-full max-md sm:max-w-lg p-6 sm:p-7 shadow-[0_0_40px_rgba(204,255,0,0.25)] space-y-6 animate-in fade-in zoom-in-95 duration-150">
