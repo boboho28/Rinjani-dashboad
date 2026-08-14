@@ -226,45 +226,61 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       };
     }
 
-    // 5. TRY POP-OUT WINDOW (Solusi agar "Melayang" terpisah)
+    // 5. PERBAIKAN POP-OUT WINDOW (Agar muncul meski di tab lain)
     try {
-        const width = 450;
-        const height = 550;
+        const width = 480;
+        const height = 580;
         const left = (window.screen.width / 2) - (width / 2);
         const top = (window.screen.height / 2) - (height / 2);
         
-        const popup = window.open("", "RinjaniAlarmPopup", `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no`);
+        // Gunakan nama window unik berdasarkan pasaran agar tidak menimpa jika ada 2 alarm berdekatan
+        const winName = `RinjaniAlarm_${alarmData.pasaranName.replace(/\s+/g, '_')}`;
+        const popup = window.open("", winName, `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no,scrollbars=no`);
         
         if (popup) {
             popupWindowRef.current = popup;
             popup.document.write(`
+                <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>RESULT ${alarmData.pasaranName}</title>
+                    <meta charset="UTF-8">
+                    <title>⚠️ RESULT ${alarmData.pasaranName}</title>
                     <style>
-                        body { background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-                        .bell { font-size: 80px; animation: swing 1s ease-in-out infinite alternate; margin-bottom: 20px; }
-                        @keyframes swing { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
-                        h1 { color: #ccff00; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-                        h2 { font-size: 18px; color: #fff; margin: 10px 0; }
-                        button { background: #ccff00; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 8px; margin-top: 20px; text-transform: uppercase; }
+                        body { background: #070913; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; border: 4px solid #ccff00; box-sizing: border-box; }
+                        .bell-box { font-size: 100px; animation: swing 0.8s ease-in-out infinite alternate; margin-bottom: 20px; filter: drop-shadow(0 0 20px #ccff00); }
+                        @keyframes swing { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
+                        h1 { color: #ccff00; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 3px; text-align: center; font-weight: 900; text-shadow: 0 0 15px rgba(204,255,0,0.5); }
+                        h2 { font-size: 20px; color: #fff; margin: 15px 0; letter-spacing: 2px; font-weight: bold; }
+                        .btn { background: #ccff00; border: none; padding: 20px 40px; font-weight: 900; cursor: pointer; border-radius: 15px; margin-top: 30px; text-transform: uppercase; color: #000; font-size: 16px; box-shadow: 0 0 20px rgba(204,255,0,0.4); transition: transform 0.2s; }
+                        .btn:hover { transform: scale(1.1); background: #e5ff80; }
                     </style>
                 </head>
                 <body>
-                    <div class="bell">🔔</div>
+                    <div class="bell-box">🔔</div>
                     <h1>${alarmData.pasaranName}</h1>
-                    <h2>JAM RESULT ${alarmData.jamResult}</h2>
-                    <button onclick="window.opener.focus(); window.close();">BUKA DASHBOARD</button>
+                    <h2>RESULT TIME: ${alarmData.jamResult}</h2>
+                    <button class="btn" onclick="window.opener.focus(); window.close();">PROSES RESULT SEKARANG</button>
                     <script>
-                        // Sinkronisasi tutup jika di dashboard ditutup
-                        setInterval(() => { if(!window.opener || window.opener.closed) window.close(); }, 1000);
+                        // Memaksa window ke depan saat dibuka
+                        window.focus();
+                        // Tutup otomatis jika dashboard utama ditutup
+                        const checker = setInterval(() => { 
+                            if(!window.opener || window.opener.closed) {
+                                clearInterval(checker);
+                                window.close(); 
+                            }
+                        }, 1000);
                     </script>
                 </body>
                 </html>
             `);
+            popup.document.close();
+            popup.focus(); // Fokuskan popup yang baru dibuka
+        } else {
+            console.warn("Popup blocked! Please allow popups for this site.");
         }
     } catch (e) {
-        console.warn("External popup blocked by browser settings.");
+        console.error("Popup Error:", e);
     }
   };
 
@@ -1393,7 +1409,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
             <div className="space-y-4 text-xs font-mono-code">
               <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30"><div><div className="text-white font-bold font-heading uppercase text-xs">Otomatis Popup Alarm</div></div><input type="checkbox" checked={isAlarmEnabled} onChange={(e) => setIsAlarmEnabled(e.target.checked)} className="w-6 h-6 accent-[#ccff00] cursor-pointer" /></div>
               <div className="flex items-center justify-between bg-[#121624] p-4 rounded-xl border border-[#ccff00]/30"><div><div className="text-white font-bold font-heading uppercase text-xs">Suara Sirine</div></div><button type="button" onClick={() => setIsMuted(!isMuted)} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 ${isMuted ? 'bg-rose-950 text-rose-400 border border-rose-500/50' : 'bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/50'}`}>{isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}<span>{isMuted ? 'MUTE' : 'UNMUTE'}</span></button></div>
-              <div className="pt-2"><button type="button" onClick={() => { setShowAlarmConfigModal(false); triggerAlarm({ pasaranName: 'TEST ALARM MULUS', jamTutup: '00:00', jamResult: '00:00', session: 'SORE' }); }} className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading"><Play className="w-5 h-5 fill-slate-950" /><span>TEST ALARM POPUP</span></button></div>
+              <div className="pt-2">
+                <button type="button" onClick={() => { 
+                    setShowAlarmConfigModal(false); 
+                    triggerAlarm({ pasaranName: 'TEST POP-OUT ALARM', jamTutup: '00:00', jamResult: '00:00', session: 'SORE' }); 
+                }} className="w-full bg-[#ccff00] hover:bg-[#e5ff80] text-slate-950 font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,255,0,0.5)] cursor-pointer transition-all uppercase tracking-wider font-heading">
+                    <ExternalLink className="w-5 h-5" />
+                    <span>TEST POP-OUT SEKARANG</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 italic text-center mt-2 px-4">Jika pop-out tidak muncul, pastikan "Pop-ups" diperbolehkan (Allowed) pada pengaturan browser Anda untuk situs ini.</p>
             </div>
           </div>
         </div>
