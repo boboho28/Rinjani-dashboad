@@ -55,6 +55,16 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const titleIntervalRef = useRef<any>(null);
   const popupWindowRef = useRef<Window | null>(null);
 
+  // --- STATE FOR SINGAPORE SWEEP CALC ---
+  const [sweepBalls, setSweepBalls] = useState<string[]>(['4', '7', '22', '29', '33', '46', '48']);
+  const [sweepResult, setSweepResult] = useState<string>('9280');
+
+  const handleSweepBallChange = (index: number, value: string) => {
+    const newBalls = [...sweepBalls];
+    newBalls[index] = value;
+    setSweepBalls(newBalls);
+  };
+
   useEffect(() => {
     localStorage.setItem('rinjani_last_result_session', selectedSession);
   }, [selectedSession]);
@@ -187,7 +197,6 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     }
 
     // 5. TRY POP-OUT WINDOW (Solusi agar "Melayang" terpisah)
-    // Catatan: Pastikan browser tidak memblokir Popup untuk situs ini
     try {
         const width = 450;
         const height = 550;
@@ -892,7 +901,8 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
       
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
-        <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1">
+        {/* BAGIAN KIRI: FILTER, TOMBOL DAN SHORTCUT TITLE */}
+        <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1 min-w-0">
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
@@ -957,14 +967,50 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <div className="fire-title-container">
                 {renderFireLetters("SHORTCUT RESULT")}
               </div>
-              <p className="text-[10px] font-mono-code text-white/70 font-bold tracking-[0.2em] uppercase mt-0.5">
-              </p>
             </div>
           </div>
-
         </div>
 
-        <div className="relative w-full lg:w-[480px] xl:w-[520px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-3 pt-5 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-3">
+        {/* BAGIAN TENGAH: SINGAPORE SWEEP CALC (SESUAI GAMBAR 3) */}
+        <div className="flex flex-col items-center justify-center bg-[#07050f] border-2 border-[#ccff00]/60 rounded-2xl p-3 px-6 shadow-[inset_0_0_15px_rgba(204,255,0,0.2)] min-w-[340px] gap-2.5">
+          <div className="fire-title-container">
+            {renderFireLetters("RUMUS SINGAPORE SWEEP", "1.2em")}
+          </div>
+          
+          <div className="bg-[#121421]/60 border border-[#ccff00]/30 rounded-full px-6 py-2.5 flex items-center gap-4 shadow-inner">
+             {sweepBalls.map((ball, idx) => (
+                <span key={idx} className="text-[#ccff00] font-black font-mono text-lg drop-shadow-[0_0_8px_#ccff00]">{ball}</span>
+             ))}
+          </div>
+
+          <div className="flex items-center gap-2.5 pt-1">
+             {sweepBalls.map((ball, idx) => (
+                <div 
+                  key={idx} 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border-2 transition-all ${idx === 6 ? 'bg-white/10 border-white text-white shadow-[0_0_10px_#fff]' : 'bg-black/80 border-[#ccff00]/60 text-[#ccff00] shadow-[0_0_10px_rgba(204,255,0,0.4)]'}`}
+                >
+                  <input 
+                    type="text" 
+                    value={ball.padStart(2, '0')} 
+                    onChange={(e) => handleSweepBallChange(idx, e.target.value)}
+                    className="bg-transparent w-full text-center outline-none"
+                  />
+                </div>
+             ))}
+          </div>
+
+          <div className="mt-1">
+            <input 
+              type="text" 
+              value={sweepResult} 
+              onChange={(e) => setSweepResult(e.target.value)}
+              className="text-[#ccff00] bg-transparent font-black text-4xl text-center outline-none tracking-[0.2em] [text-shadow:0_0_20px_#ccff00] font-brand uppercase w-48"
+            />
+          </div>
+        </div>
+
+        {/* BAGIAN KANAN: TERMINAL PRIZE */}
+        <div className="relative w-full lg:w-[450px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-3 pt-5 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-3">
           <div className="absolute -top-4 left-4 bg-[#ccff00] text-slate-950 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80] text-[10px] font-black tracking-widest uppercase">
             TERMINAL PRIZE
           </div>
@@ -1022,7 +1068,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
 
       </div>
 
-      <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-320px)] min-h-[350px] overflow-y-auto custom-scrollbar">
+      <div className="bg-[#080b14] border border-[#ccff00]/30 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-x-auto max-h-[calc(100vh-340px)] min-h-[350px] overflow-y-auto custom-scrollbar">
         <table className="w-full text-left border-collapse min-w-[1000px] relative">
           <thead className="sticky top-0 z-20 bg-[#0d1222] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
             <tr className="border-b-2 border-[#ccff00]/40 text-[11px] font-mono-code uppercase text-[#ccff00] tracking-wider">
