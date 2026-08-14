@@ -284,6 +284,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     };
   }, [activeAlarm]);
 
+  // --- PERBAIKAN LOGIKA ALARM ---
   useEffect(() => {
     if (!isAlarmEnabled) return;
 
@@ -295,6 +296,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
     const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 
     pasaranList.forEach((item) => {
+      // Trigger alarm jika status masih BELUM dan waktu tutup sudah tercapai/terlewati
       if (item.status === 'BELUM' && (!item.p1Prize || item.p1Prize === '-')) {
         const matchTutup = item.jamTutup.match(/(\d{1,2}):(\d{2})/);
         if (matchTutup) {
@@ -303,7 +305,9 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           const tutupTotalSecs = hoursTutup * 3600 + minsTutup * 60;
           const diffSecs = tutupTotalSecs - nowTotalSecs;
 
-          if (diffSecs <= 0 && diffSecs >= -3) {
+          // Perbaikan: Gunakan range yang lebih lebar (60 detik) untuk memastikan trigger tertangkap
+          // dan pastikan hanya trigger 1x per pasaran per hari menggunakan triggerKey
+          if (diffSecs <= 0 && diffSecs >= -60) {
             const triggerKey = `${item.id}-${todayDateStr}-${item.jamTutup}`;
             if (!triggeredAlarmsRef.current.has(triggerKey)) {
               triggeredAlarmsRef.current.add(triggerKey);
