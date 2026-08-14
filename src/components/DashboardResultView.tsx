@@ -55,15 +55,32 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
   const titleIntervalRef = useRef<any>(null);
   const popupWindowRef = useRef<Window | null>(null);
 
-  // --- STATE FOR SINGAPORE SWEEP CALC ---
-  const [sweepBalls, setSweepBalls] = useState<string[]>(['4', '7', '22', '29', '33', '46', '48']);
-  const [sweepResult, setSweepResult] = useState<string>('9280');
+  // --- STATE FOR RUMUS SINGAPORE POOLS ---
+  const [sweepInput, setSweepInput] = useState<string>('');
+  const [sweepBalls, setSweepBalls] = useState<number[]>([4, 7, 22, 29, 33, 46, 48]);
+  const [calculated4D, setCalculated4D] = useState<string>('9280');
 
-  const handleSweepBallChange = (index: number, value: string) => {
-    const newBalls = [...sweepBalls];
-    newBalls[index] = value;
-    setSweepBalls(newBalls);
-  };
+  // Logika Perhitungan Rumus Sesuai Gambar Excel
+  useEffect(() => {
+    const nums = sweepInput.trim().split(/[\s,.-]+/).filter(n => n !== '').map(n => parseInt(n, 10) || 0);
+    
+    if (nums.length >= 7) {
+      const b = nums.slice(0, 7);
+      setSweepBalls(b);
+
+      // Rumus Excel:
+      // Digit 1: Angka terakhir dari (Bola 2 + Bola 3)
+      const d1 = String(b[1] + b[2]).slice(-1); 
+      // Digit 2: Angka terakhir dari (Bola 4 + Bola 5)
+      const d2 = String(b[3] + b[4]).slice(-1); 
+      // Digit 3 & 4: 2 Digit Terakhir dari ((Total Bola 1-6) * 2) - Bola 1 - Bola 6 + ADD
+      const totalB16 = b[0] + b[1] + b[2] + b[3] + b[4] + b[5];
+      const resStep = (totalB16 * 2) - b[0] - b[5] + b[6];
+      const d34 = String(resStep).slice(-2).padStart(2, '0');
+
+      setCalculated4D(`${d1}${d2}${d34}`);
+    }
+  }, [sweepInput]);
 
   useEffect(() => {
     localStorage.setItem('rinjani_last_result_session', selectedSession);
@@ -897,13 +914,34 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         .link-loader { display: inline-flex; gap: 10px; cursor: pointer; background: none; border: none; padding: 8px; transition: transform 0.2s; }
         .link-loader:before, .link-loader:after { content: ""; height: 18px; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(#222 0 0) top/100% 40% no-repeat, radial-gradient(farthest-side,#000 95%,#0000) 50%/8px 8px no-repeat #fff; animation: l7 1.5s infinite alternate ease-in; }
         @keyframes l7 { 0%, 70% {background-size:100% 40%,8px 8px} 85% {background-size:100% 120%,8px 8px} 100% {background-size:100% 40%,8px 8px} }
+
+        /* GOLD THEME STYLES FOR RUMUS SECTION */
+        .rumus-card { 
+            background: #0a0a0a; 
+            border: 2px solid #2d2417; 
+            border-radius: 20px; 
+            box-shadow: inset 0 0 15px rgba(255,191,0,0.1), 0 10px 30px rgba(0,0,0,0.8); 
+        }
+        .ball-slot { 
+            background: #181818; 
+            border: 2px solid #3d341d; 
+            border-radius: 12px; 
+            transition: all 0.3s; 
+        }
+        .ball-slot.highlight { 
+            border-color: #ffffff; 
+            background: rgba(255,255,255,0.05); 
+            box-shadow: 0 0 10px rgba(255,255,255,0.2); 
+        }
+        .gold-glow { 
+            color: #ffbf00; 
+            text-shadow: 0 0 15px rgba(255,191,0,0.6); 
+        }
       `}</style>
       
       <div className="bg-[#0b0f1a] border-2 border-[#ccff00]/60 rounded-2xl p-3 sm:p-4 shadow-[0_0_25px_rgba(204,255,0,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sticky top-[98px] sm:top-[102px] z-30 bg-[#0b0f1a]">
         
-        {/* BAGIAN KIRI: FILTER, TOMBOL DAN SHORTCUT TITLE */}
         <div className="flex flex-col justify-between items-start self-stretch gap-3 flex-1 min-w-0">
-          
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <div className="flex items-center bg-[#151128] border-2 border-[#ccff00]/60 rounded-full px-4 py-1.5 text-[#ccff00] font-bold shadow-[0_0_12px_rgba(204,255,0,0.2)]">
               <span className="font-mono-code font-black text-xs uppercase tracking-wider">{selectedSession === "ALL PASARAN" ? "ALL PASARAN" : `SESI ${selectedSession}`}</span>
@@ -971,45 +1009,39 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
           </div>
         </div>
 
-        {/* BAGIAN TENGAH: SINGAPORE SWEEP CALC (SESUAI GAMBAR 3) */}
-        <div className="flex flex-col items-center justify-center bg-[#07050f] border-2 border-[#ccff00]/60 rounded-2xl p-3 px-6 shadow-[inset_0_0_15px_rgba(204,255,0,0.2)] min-w-[340px] gap-2.5">
+        {/* MIDDLE SECTION: RUMUS SINGAPORE POOLS (EXCEL LOGIC + GOLD THEME) */}
+        <div className="rumus-card flex flex-col items-center justify-center p-4 px-8 min-w-[400px] gap-3">
           <div className="fire-title-container">
-            {renderFireLetters("RUMUS SINGAPORE SWEEP", "1.2em")}
+            {renderFireLetters("RUMUS SINGAPORE POOLS", "1.1em")}
           </div>
           
-          <div className="bg-[#121421]/60 border border-[#ccff00]/30 rounded-full px-6 py-2.5 flex items-center gap-4 shadow-inner">
-             {sweepBalls.map((ball, idx) => (
-                <span key={idx} className="text-[#ccff00] font-black font-mono text-lg drop-shadow-[0_0_8px_#ccff00]">{ball}</span>
-             ))}
+          <div className="w-full relative group">
+            <input 
+              type="text" 
+              placeholder="TEMPEL 7 ANGKA RESULT DISINI..." 
+              value={sweepInput}
+              onChange={(e) => setSweepInput(e.target.value)}
+              className="w-full bg-[#050505] border border-[#3d341d] focus:border-[#ffbf00] rounded-full py-2.5 px-6 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest outline-none transition-all placeholder:text-slate-700"
+            />
+            <div className="absolute inset-y-0 right-4 flex items-center"><Terminal className="w-4 h-4 text-[#3d341d] group-focus-within:text-[#ffbf00]" /></div>
           </div>
 
-          <div className="flex items-center gap-2.5 pt-1">
+          <div className="flex items-center gap-2">
              {sweepBalls.map((ball, idx) => (
-                <div 
-                  key={idx} 
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border-2 transition-all ${idx === 6 ? 'bg-white/10 border-white text-white shadow-[0_0_10px_#fff]' : 'bg-black/80 border-[#ccff00]/60 text-[#ccff00] shadow-[0_0_10px_rgba(204,255,0,0.4)]'}`}
-                >
-                  <input 
-                    type="text" 
-                    value={ball.padStart(2, '0')} 
-                    onChange={(e) => handleSweepBallChange(idx, e.target.value)}
-                    className="bg-transparent w-full text-center outline-none"
-                  />
+                <div key={idx} className={`ball-slot w-11 h-11 flex items-center justify-center font-black text-lg ${idx === 6 ? 'highlight' : ''}`}>
+                  <span className={idx === 6 ? 'text-white' : 'text-[#ffbf00]'}>{String(ball).padStart(2, '0')}</span>
                 </div>
              ))}
           </div>
 
           <div className="mt-1">
-            <input 
-              type="text" 
-              value={sweepResult} 
-              onChange={(e) => setSweepResult(e.target.value)}
-              className="text-[#ccff00] bg-transparent font-black text-4xl text-center outline-none tracking-[0.2em] [text-shadow:0_0_20px_#ccff00] font-brand uppercase w-48"
-            />
+            <span className="gold-glow font-black text-5xl tracking-[0.3em] font-brand uppercase">
+              {calculated4D}
+            </span>
           </div>
         </div>
 
-        {/* BAGIAN KANAN: TERMINAL PRIZE */}
+        {/* RIGHT SECTION: TERMINAL PRIZE */}
         <div className="relative w-full lg:w-[450px] shrink-0 border-2 border-[#ccff00]/80 bg-[#070410] rounded-2xl p-3 pt-5 shadow-[0_0_25px_rgba(204,255,0,0.25)] space-y-3">
           <div className="absolute -top-4 left-4 bg-[#ccff00] text-slate-950 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.6)] border border-[#e5ff80] text-[10px] font-black tracking-widest uppercase">
             TERMINAL PRIZE
@@ -1259,7 +1291,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
         </div>
       )}
 
-      {/* NEW 3D BELL ALARM POPUP WITH BACKGROUND */}
+      {/* 3D BELL ALARM POPUP WITH BACKGROUND */}
       {activeAlarm && (
         <div 
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 overflow-hidden bg-cover bg-center"
@@ -1342,7 +1374,7 @@ export const DashboardResultView: React.FC<DashboardResultViewProps> = ({
               <div className="bg-[#12162a] border border-[#232a48] rounded-xl p-4 flex flex-col justify-between"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono-code">SHIO</span><div className="flex items-center gap-3 mt-1.5"><span className="text-3xl">{calculateShio(popupPasaran.p1Prize).emoji}</span><span className="text-xl sm:text-2xl font-black text-white font-heading uppercase">{calculateShio(popupPasaran.p1Prize).name}</span></div></div>
             </div>
             <div className="space-y-2.5"><label className="text-sm font-bold text-slate-300 font-mono-code uppercase tracking-wider flex items-center gap-2"><FileText className="w-4 h-4 text-[#ccff00]" />Teks Rekapan</label><textarea value={popupText} onChange={(e) => setPopupText(e.target.value)} rows={7} className="w-full bg-[#070913] border-2 border-[#1f2848] focus:border-[#ccff00] rounded-xl p-4 text-sm text-[#ccff00] font-mono-code leading-relaxed focus:outline-none transition-all" /></div>
-            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><Check className="w-5 h-5" /> Tersalin!</> : <><Copy className="w-5 h-5" /> Salin Teks</>}</button></div>
+            <div className="flex items-center justify-between pt-3 border-t border-[#1c223a] gap-4"><button type="button" onClick={() => setIsResultPopupOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-[#131728] border border-[#262f50] rounded-xl">Tutup</button><button type="button" onClick={() => { navigator.clipboard.writeText(popupText); addToast('✅ Berhasil disalin!', 'success'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition-all font-heading ${isCopied ? 'bg-emerald-400 text-slate-950' : 'bg-[#ccff00] text-slate-950 shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}>{isCopied ? <><><Check className="w-5 h-5" /> Tersalin!</></> : <><><Copy className="w-5 h-5" /> Salin Teks</></>}</button></div>
           </div>
         </div>
       )}
