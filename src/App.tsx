@@ -154,6 +154,17 @@ export default function App() {
     }
   };
 
+  // FUNGSI PIN UNTUK TEMPLATE/IMAGE
+  const handleTogglePinTemplate = async (id: string) => {
+    const updated = templates.map(t => 
+      t.id === id ? { ...t, isPinned: !t.isPinned, updatedAt: new Date().toISOString() } : t
+    );
+    setTemplates(updated);
+    await forceSync({ templates: updated });
+    const isNowPinned = updated.find(t => t.id === id)?.isPinned;
+    addToast(isNowPinned ? 'Item disematkan ke atas.' : 'Pin dilepaskan.', 'info');
+  };
+
   const handleAddCategory = async (catData: any) => {
     const newCat = { ...catData, id: 'cat-' + Date.now(), order: categories.length + 1 };
     const updated = [...categories, newCat];
@@ -184,9 +195,10 @@ export default function App() {
     await forceSync({ pasaranList: nextList });
   };
 
-  // --- Filter Logic ---
+  // --- LOGIKA FILTER + SORTING (PIN DI ATAS) ---
   const filteredTemplates = useMemo(() => {
-    return templates.filter((item) => {
+    // 1. Lakukan Filter dulu
+    const filtered = templates.filter((item) => {
       if (selectedMainMenuId && item.mainMenuId !== selectedMainMenuId) return false;
       if (selectedCategoryId && item.categoryId !== selectedCategoryId) return false;
       if (searchQuery.trim()) {
@@ -194,6 +206,14 @@ export default function App() {
         return item.title.toLowerCase().includes(q) || item.ket.toLowerCase().includes(q);
       }
       return true;
+    });
+
+    // 2. Lakukan Sorting (Pinned item selalu di atas)
+    return [...filtered].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Jika status pin sama, urutkan berdasarkan waktu update terbaru
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
     });
   }, [templates, selectedMainMenuId, selectedCategoryId, searchQuery]);
 
@@ -308,7 +328,7 @@ export default function App() {
                               onViewImage={setViewingImageItem} 
                               onEdit={(item) => { setEditItem(item); setIsAddModalOpen(true); }} 
                               onDelete={handleDeleteTemplate} 
-                              onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} 
+                              onTogglePin={handleTogglePinTemplate} 
                               copiedId={copiedId} 
                             />
                           ) : item.mainMenuId === 'menu-link-bookmark' ? (
@@ -328,7 +348,7 @@ export default function App() {
                               onCopy={(txt) => handleCopyText(txt, item.id)} 
                               onEdit={(item) => { setEditItem(item); setIsAddModalOpen(true); }} 
                               onDelete={handleDeleteTemplate} 
-                              onTogglePin={async (id) => { const up = templates.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t); setTemplates(up); await forceSync({templates: up}); }} 
+                              onTogglePin={handleTogglePinTemplate} 
                               copiedId={copiedId} 
                             />
                           )
